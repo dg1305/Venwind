@@ -179,11 +179,13 @@ app.all("/api/*", (req, res) => {
 });
 
 // Serve static files from the 'client/dist' directory
-app.use(express.static(path.join(__dirname, "./dist")));
-app.use(history());
+const clientPath = path.join(__dirname, "../client/out");
+app.use(express.static(clientPath));
 
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "./dist", "index.html"));
+app.use(history());
+// Handle client-side routing - serve index.html for all non-API routes
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(clientPath, "index.html"));
 });
 
 // set port
