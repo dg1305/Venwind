@@ -22,6 +22,7 @@ export default function ContentSection({ activeSection, activeSubsection }: Cont
             documents: [],
           },
         });
+        console.log('Fetched content for', sectionKey, ':', result.data);
         setContent(result.data);
       } catch (error) {
         console.error('Error loading content:', error);
@@ -70,7 +71,7 @@ export default function ContentSection({ activeSection, activeSubsection }: Cont
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-8" data-aos="fade-up">
+    <div className="bg-white rounded-lg shadow-sm p-8">
       <h2 className="text-3xl font-bold text-gray-900 mb-4">
         {sectionTitles[activeSection] || 'Investor Relations'}
       </h2>
@@ -90,11 +91,13 @@ export default function ContentSection({ activeSection, activeSubsection }: Cont
         </div>
       )}
 
-      {content?.documents && content.documents.length > 0 && (
+      {content?.documents && Array.isArray(content.documents) && content.documents.length > 0 && (
         <div className="mt-8">
           <h4 className="text-lg font-semibold text-gray-800 mb-4">Documents</h4>
           <div className="space-y-3">
             {content.documents.map((doc: any, index: number) => {
+              if (!doc || !doc.url) return null;
+              
               const fileExtension = doc.url?.split('.').pop()?.toLowerCase() || '';
               const getFileIcon = () => {
                 if (fileExtension === 'pdf') return 'ri-file-pdf-line text-red-600';
@@ -130,7 +133,7 @@ export default function ContentSection({ activeSection, activeSubsection }: Cont
         </div>
       )}
 
-      {(!content?.content && (!content?.documents || content.documents.length === 0)) && (
+      {(!content?.content && (!content?.documents || !Array.isArray(content.documents) || content.documents.length === 0)) && (
         <div className="text-center py-12 text-gray-500">
           <p>No content available for this section yet.</p>
         </div>

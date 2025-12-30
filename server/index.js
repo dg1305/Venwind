@@ -150,6 +150,27 @@ app.post('/api/upload/image', uploadImage.single('image'), (req, res) => {
   }
 });
 
+// File upload endpoint for documents (PDF, DOC, DOCX, XLS, XLSX)
+const uploadFile = require('./middlewares/uploadFile');
+app.post('/api/upload/file', uploadFile.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file provided' });
+    }
+    
+    // Return the file path relative to the server
+    const fileUrl = `/uploads/documents/${req.file.filename}`;
+    res.json({ 
+      success: true, 
+      fileUrl: fileUrl,
+      filename: req.file.filename 
+    });
+  } catch (error) {
+    console.error('File upload error:', error);
+    res.status(500).json({ error: 'Failed to upload file', message: error.message });
+  }
+});
+
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

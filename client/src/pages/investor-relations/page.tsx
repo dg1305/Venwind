@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
+import { useState } from 'react';
 import Header from '../home/components/Header';
 import Footer from '../home/components/Footer';
 import SidebarNavigation from './components/SidebarNavigation';
@@ -10,20 +8,12 @@ export default function InvestorRelations() {
   const [activeSection, setActiveSection] = useState<string>('annual-return');
   const [activeSubsection, setActiveSubsection] = useState<string>('fy-2024-25');
 
-  useEffect(() => {
-    AOS.init({
-      duration: 1000,
-      once: true,
-      easing: 'ease-out',
-    });
-  }, []);
-
   return (
     <div className="min-h-screen bg-white">
       <Header />
       <div className="pt-20">
         <div className="max-w-7xl mx-auto px-6 lg:px-16 py-12">
-          <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-12 text-center" data-aos="fade-up">
+          <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-12 text-center">
             Investor Relations
           </h1>
           

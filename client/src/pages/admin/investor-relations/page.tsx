@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import * as React from 'react';
 import AdminLayout, { API_BASE_URL } from '../components/AdminLayout';
 import { useCMSData } from '../hooks/useCMSData';
 
@@ -6,7 +7,16 @@ export default function AdminInvestorRelationsPage() {
   const [activeSection, setActiveSection] = useState('annual-return');
   const [activeSubsection, setActiveSubsection] = useState('fy-2024-25');
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, boolean>>({});
-  const { getFieldValue, loading } = useCMSData('investor-relations');
+  const [formData, setFormData] = useState<{
+    title: string;
+    content: string;
+    documents: Array<{ name: string; url: string; description: string }>;
+  }>({
+    title: '',
+    content: '',
+    documents: [],
+  });
+  const { getFieldValue, loading, refreshData } = useCMSData('investor-relations');
 
   const sections = [
     {
@@ -58,7 +68,7 @@ export default function AdminInvestorRelationsPage() {
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', file); // Use 'file' field name to match backend endpoint
       
       const response = await fetch(`${API_BASE_URL}/api/upload/file`, {
         method: 'POST',
@@ -69,22 +79,33 @@ export default function AdminInvestorRelationsPage() {
         const result = await response.json();
         if (result.success && result.fileUrl) {
           const fullUrl = `${API_BASE_URL}${result.fileUrl}`;
-          const urlInput = document.querySelector(`input[name="doc_${docIndex}_url"]`) as HTMLInputElement;
-          if (urlInput) {
-            urlInput.value = fullUrl;
-            // Auto-fill name if empty
-            const nameInput = document.querySelector(`input[name="doc_${docIndex}_name"]`) as HTMLInputElement;
-            if (nameInput && !nameInput.value) {
-              nameInput.value = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+          // Update form state directly
+          setFormData(prev => {
+            const newDocuments = [...prev.documents];
+            if (!newDocuments[docIndex - 1]) {
+              newDocuments[docIndex - 1] = { name: '', url: '', description: '' };
             }
-            alert('File uploaded successfully! The URL has been set. Click "Save Changes" to save it.');
-          }
+            newDocuments[docIndex - 1] = {
+              ...newDocuments[docIndex - 1],
+              url: fullUrl,
+              name: newDocuments[docIndex - 1].name || file.name.replace(/\.[^/.]+$/, ''), // Auto-fill name if empty
+            };
+            return { ...prev, documents: newDocuments };
+          });
+          alert('File uploaded successfully! The URL has been set. Click "Save Changes" to save it.');
         } else {
           throw new Error(result.error || 'Upload failed');
         }
       } else {
         const errorText = await response.text();
-        throw new Error(`Server error: ${response.status} - ${errorText}`);
+        let errorMessage = `Server error: ${response.status}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || errorMessage;
+        } catch {
+          errorMessage = `${errorMessage} - ${errorText}`;
+        }
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -97,34 +118,41 @@ export default function AdminInvestorRelationsPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
     const sectionKey = `${activeSection}_${activeSubsection}`;
     
+    // Use state data directly instead of FormData
     const dataObj: any = {
-      title: (formData.get('title') as string)?.trim() || '',
-      content: (formData.get('content') as string)?.trim() || '',
-      documents: [],
+      title: formData.title.trim(),
+      content: formData.content.trim(),
+      documents: formData.documents
+        .filter(doc => doc.name && doc.url) // Only include documents with both name and URL
+        .map(doc => ({
+          name: doc.name.trim(),
+          url: doc.url.trim(),
+          description: doc.description.trim(),
+        })),
     };
-
-    // Handle documents
-    for (let i = 1; i <= 10; i++) {
-      const docName = (formData.get(`doc_${i}_name`) as string)?.trim();
-      const docUrl = (formData.get(`doc_${i}_url`) as string)?.trim();
-      const docDescription = (formData.get(`doc_${i}_description`) as string)?.trim();
-      
-      if (docName && docUrl) {
-        dataObj.documents.push({
-          name: docName,
-          url: docUrl,
-          description: docDescription || '',
-        });
-      }
-    }
 
     try {
       const { saveCMSData } = await import('../../../utils/cms');
       await saveCMSData('investor-relations', sectionKey, dataObj);
+      
+      // Dispatch custom event to update frontend immediately
+      window.dispatchEvent(
+        new CustomEvent('cmsUpdate', {
+          detail: { 
+            page: 'investor-relations', 
+            section: sectionKey
+          },
+        })
+      );
+      
+      // Don't refresh immediately - the form data is already correct
+      // Only refresh in background to sync with server
+      setTimeout(() => {
+        refreshData();
+      }, 500);
+      
       alert('Changes saved successfully!');
     } catch (error) {
       console.error('Error saving:', error);
@@ -135,15 +163,52 @@ export default function AdminInvestorRelationsPage() {
   const currentSection = sections.find(s => s.id === activeSection);
   const currentSubsection = currentSection?.subsections.find(s => s.id === activeSubsection);
   const sectionKey = `${activeSection}_${activeSubsection}`;
-  const currentContent = getFieldValue(sectionKey, 'title') ? {
-    title: getFieldValue(sectionKey, 'title'),
-    content: getFieldValue(sectionKey, 'content'),
-    documents: getFieldValue(sectionKey, 'documents') || [],
+  const sectionData = getFieldValue(sectionKey);
+  const currentContent = sectionData ? {
+    title: sectionData.title || '',
+    content: sectionData.content || '',
+    documents: sectionData.documents || [],
   } : null;
+
+  // Update form data ONLY when section/subsection changes, not during refresh
+  useEffect(() => {
+    if (!loading) {
+      const sectionData = getFieldValue(sectionKey);
+      if (sectionData) {
+        setFormData({
+          title: sectionData.title || '',
+          content: sectionData.content || '',
+          documents: Array.isArray(sectionData.documents) && sectionData.documents.length > 0 
+            ? [...sectionData.documents, ...Array(Math.max(0, 5 - sectionData.documents.length)).fill({ name: '', url: '', description: '' })].slice(0, 5)
+            : [
+                { name: '', url: '', description: '' },
+                { name: '', url: '', description: '' },
+                { name: '', url: '', description: '' },
+                { name: '', url: '', description: '' },
+                { name: '', url: '', description: '' },
+              ],
+        });
+      } else {
+        // Only clear if switching to a new empty section
+        setFormData({
+          title: '',
+          content: '',
+          documents: [
+            { name: '', url: '', description: '' },
+            { name: '', url: '', description: '' },
+            { name: '', url: '', description: '' },
+            { name: '', url: '', description: '' },
+            { name: '', url: '', description: '' },
+          ],
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection, activeSubsection]); // Only update when section changes, ignore loading/refresh
 
   if (loading) {
     return (
-      <AdminLayout>
+      <AdminLayout pageName="Investor Relations" pagePath="/investor-relations">
         <div className="flex items-center justify-center h-64">
           <div className="w-16 h-16 border-4 border-[#8DC63F] border-t-transparent rounded-full animate-spin"></div>
         </div>
@@ -152,7 +217,7 @@ export default function AdminInvestorRelationsPage() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout pageName="Investor Relations" pagePath="/investor-relations">
       <div className="space-y-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Investor Relations CMS</h1>
@@ -204,7 +269,8 @@ export default function AdminInvestorRelationsPage() {
                 <input
                   type="text"
                   name="title"
-                  defaultValue={currentContent?.title || ''}
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
                   placeholder="Enter title"
                 />
@@ -215,7 +281,8 @@ export default function AdminInvestorRelationsPage() {
                 <textarea
                   name="content"
                   rows={10}
-                  defaultValue={currentContent?.content || ''}
+                  value={formData.content}
+                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
                   placeholder="Enter content here..."
                 />
@@ -226,7 +293,7 @@ export default function AdminInvestorRelationsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-4">Documents</label>
                 <div className="space-y-4">
                   {[1, 2, 3, 4, 5].map((num) => {
-                    const doc = currentContent?.documents?.[num - 1] || { name: '', url: '', description: '' };
+                    const doc = formData.documents[num - 1] || { name: '', url: '', description: '' };
                     return (
                       <div key={num} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                         <h3 className="text-sm font-semibold text-gray-800 mb-3">Document {num}</h3>
@@ -236,7 +303,15 @@ export default function AdminInvestorRelationsPage() {
                             <input
                               type="text"
                               name={`doc_${num}_name`}
-                              defaultValue={doc.name}
+                              value={doc.name}
+                              onChange={(e) => {
+                                const newDocuments = [...formData.documents];
+                                if (!newDocuments[num - 1]) {
+                                  newDocuments[num - 1] = { name: '', url: '', description: '' };
+                                }
+                                newDocuments[num - 1] = { ...newDocuments[num - 1], name: e.target.value };
+                                setFormData(prev => ({ ...prev, documents: newDocuments }));
+                              }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent text-sm"
                               placeholder="e.g., Annual Report 2024-25"
                             />
@@ -247,7 +322,15 @@ export default function AdminInvestorRelationsPage() {
                               <input
                                 type="url"
                                 name={`doc_${num}_url`}
-                                defaultValue={doc.url}
+                                value={doc.url}
+                                onChange={(e) => {
+                                  const newDocuments = [...formData.documents];
+                                  if (!newDocuments[num - 1]) {
+                                    newDocuments[num - 1] = { name: '', url: '', description: '' };
+                                  }
+                                  newDocuments[num - 1] = { ...newDocuments[num - 1], url: e.target.value };
+                                  setFormData(prev => ({ ...prev, documents: newDocuments }));
+                                }}
                                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent text-sm"
                                 placeholder="https://example.com/document.pdf"
                               />
@@ -288,7 +371,15 @@ export default function AdminInvestorRelationsPage() {
                             <input
                               type="text"
                               name={`doc_${num}_description`}
-                              defaultValue={doc.description}
+                              value={doc.description}
+                              onChange={(e) => {
+                                const newDocuments = [...formData.documents];
+                                if (!newDocuments[num - 1]) {
+                                  newDocuments[num - 1] = { name: '', url: '', description: '' };
+                                }
+                                newDocuments[num - 1] = { ...newDocuments[num - 1], description: e.target.value };
+                                setFormData(prev => ({ ...prev, documents: newDocuments }));
+                              }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent text-sm"
                               placeholder="Brief description"
                             />
