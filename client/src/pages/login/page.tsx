@@ -1,21 +1,44 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '';
+
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
     
-    // Simple authentication (you can modify credentials as needed)
-    if (username === 'admin' && password === 'admin123') {
-      localStorage.setItem('isAdminLoggedIn', 'true');
-      navigate('/admin');
-    } else {
-      setError('Invalid username or password');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status) {
+        localStorage.setItem('isAdminLoggedIn', 'true');
+        localStorage.setItem('userType', data.user_data?.user_type || 'Admin');
+        localStorage.setItem('userId', data.user_data?.id || '');
+        navigate('/admin');
+      } else {
+        setError(data.message || 'Invalid username or password');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Failed to connect to server. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,10 +89,11 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors whitespace-nowrap"
+              disabled={loading}
+              className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <i className="ri-login-box-line mr-2"></i>
-              Login
+              {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
 
@@ -82,10 +106,6 @@ export default function LoginPage() {
               Back to Website
             </a>
           </div>
-        </div>
-
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Default credentials: admin / admin123</p>
         </div>
       </div>
     </div>

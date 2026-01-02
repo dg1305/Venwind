@@ -14,17 +14,17 @@ const authController = {
       if (!errors.isEmpty()) {
         return Response.responseStatus(res, 400, "Validation Failed", errors);
       }
-      const { email, password } = req.body;
-      const existingUser = await User.findOne({ where: { email } });
+      const { username, password } = req.body;
+      const existingUser = await User.findOne({ where: { username } });
       if (!existingUser) {
-        return Response.responseStatus(res, 401, "Incorrect email");
+        return Response.responseStatus(res, 401, "Incorrect username or password");
       }
       if (!Boolean(existingUser.is_active)) {
         return Response.responseStatus(res, 401, "Inactive user");
       }
       const compare = await bcrypt.compare(password, existingUser.password);
       if (!compare) {
-        return Response.responseStatus(res, 401, "Incorrect password");
+        return Response.responseStatus(res, 401, "Incorrect username or password");
       }
       const { id } = existingUser;
       const history = await LoginHistory.create({

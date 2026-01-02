@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import { getCMSData } from '../../../utils/cms';
+import { getCMSData, normalizeImageUrl } from '../../../utils/cms';
 
 interface IntroContent {
   label?: string;
@@ -73,7 +73,7 @@ export default function IntroSection() {
       <div className="flex flex-col lg:flex-row">
         <div className="w-full lg:w-1/2 bg-white">
           <img
-            src={content.imageUrl || defaultContent.imageUrl}
+            src={normalizeImageUrl(content.imageUrl || defaultContent.imageUrl)}
             alt="Wind Turbine Technology"
             className="w-full h-full object-contain bg-white"
             data-aos="fade-right"

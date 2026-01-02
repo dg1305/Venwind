@@ -19,6 +19,7 @@ import AdminSustainabilityPage from "../pages/admin/sustainability/page";
 import AdminCareersPage from "../pages/admin/careers/page";
 import AdminContactPage from "../pages/admin/contact/page";
 import AdminInvestorRelationsPage from "../pages/admin/investor-relations/page";
+import AdminUsersPage from "../pages/admin/users/page";
 import LoginPage from "../pages/login/page";
 
 const routes: RouteObject[] = [
@@ -93,6 +94,10 @@ const routes: RouteObject[] = [
   {
     path: "/admin/investor-relations",
     element: <AdminInvestorRelationsPage />,
+  },
+  {
+    path: "/admin/users",
+    element: <AdminUsersPage />,
   },
   {
     path: "*",

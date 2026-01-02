@@ -50,19 +50,14 @@ export default function HeroSection() {
 
   if (loading) {
     return (
-      <>
-        <div className="h-24 bg-white"></div>
-        <section className="relative h-[500px] w-full overflow-hidden bg-cover bg-center flex items-center justify-center">
-          <div className="w-16 h-16 border-4 border-[#8DC63F] border-t-transparent rounded-full animate-spin"></div>
-        </section>
-      </>
+      <section className="relative h-[500px] w-full overflow-hidden bg-cover bg-center flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-[#8DC63F] border-t-transparent rounded-full animate-spin"></div>
+      </section>
     );
   }
 
   return (
-    <>
-      <div className="h-24 bg-white"></div>
-      <section 
+    <section 
         className="relative h-[500px] w-full overflow-hidden bg-cover bg-center"
         style={{
           backgroundImage: heroContent.bgImageUrl 
@@ -75,6 +70,5 @@ export default function HeroSection() {
           <h1 className="text-white text-6xl font-bold">{heroContent.title || 'Sustainability'}</h1>
         </div>
       </section>
-    </>
   );
 }

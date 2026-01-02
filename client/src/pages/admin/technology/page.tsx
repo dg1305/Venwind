@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import AdminLayout, { API_BASE_URL } from '../components/AdminLayout';
 import { useCMSData } from '../hooks/useCMSData';
+import { normalizeImageUrl } from '../../../utils/cms';
 
 export default function AdminTechnologyPage() {
   const [activeSection, setActiveSection] = useState('hero');
@@ -19,44 +20,73 @@ export default function AdminTechnologyPage() {
     }
   }, [loading, getFieldValue, activeSection]);
   
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string, section: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const uploadKey = `${section}_${fieldName}`;
+    setUploading(prev => ({ ...prev, [uploadKey]: true }));
+
     try {
       const formData = new FormData();
       formData.append('image', file);
-      const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
+      
+      // Use relative path if API_BASE_URL is empty (works with Vite proxy)
+      const uploadUrl = API_BASE_URL ? `${API_BASE_URL}/api/upload/image` : '/api/upload/image';
+      
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });
+
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.imageUrl) {
-          const fullUrl = `${API_BASE_URL}${result.imageUrl}`;
+          // Construct full URL - if API_BASE_URL is empty, use relative path
+          const fullUrl = API_BASE_URL 
+            ? `${API_BASE_URL}${result.imageUrl}` 
+            : result.imageUrl;
+          
           // Try to find input by ID first, then by name
           const inputById = document.querySelector(`#${section}-${fieldName}`) as HTMLInputElement;
           const input = inputById || document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
+          
           if (input) {
             input.value = fullUrl;
             // Update state for preview
-            setImageUrls(prev => ({ ...prev, [`${section}_${fieldName}`]: fullUrl }));
+            setImageUrls(prev => ({ ...prev, [uploadKey]: fullUrl }));
             // Trigger change event
             input.dispatchEvent(new Event('input', { bubbles: true }));
             input.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            alert('Image uploaded successfully! Click "Save Changes" to save.');
+          } else {
+            alert('Image uploaded but could not update the form field. Please refresh the page.');
           }
         } else {
-          alert('Failed to upload image. Please try again.');
+          alert('Failed to upload image: ' + (result.error || 'Unknown error'));
         }
       } else {
         const errorText = await response.text();
         console.error('Upload failed:', response.status, errorText);
-        alert(`Failed to upload image: ${response.statusText}`);
+        let errorMessage = `Failed to upload image: ${response.statusText}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorJson.message || errorMessage;
+        } catch {
+          // Use default error message
+        }
+        alert(errorMessage);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      alert('Failed to upload image. Please try again.');
+      alert(`Failed to upload image: ${error.message || 'Network error. Please check your connection and try again.'}`);
+    } finally {
+      setUploading(prev => ({ ...prev, [uploadKey]: false }));
+      e.target.value = '';
     }
-    e.target.value = '';
   };
 
   const handleRemoveImage = (fieldName: string, section: string) => {
@@ -143,9 +173,22 @@ export default function AdminTechnologyPage() {
       const { saveCMSData } = await import('../../../utils/cms');
       await saveCMSData('technology', section, dataObj);
       alert('Changes saved successfully!');
-    } catch (error) {
+      
+      // The cmsUpdate event will trigger a refresh in components that listen to it
+      // For the admin page, we can manually refresh the data
+      // Force a re-render by updating a state or triggering the useCMSData hook refresh
+    } catch (error: any) {
       console.error('Error saving:', error);
-      alert('Failed to save changes.');
+      const errorMessage = error?.message || 'Failed to save changes.';
+      
+      // Provide helpful error message based on error type
+      if (errorMessage.includes('Network error') || errorMessage.includes('Failed to fetch') || errorMessage.includes('Cannot connect')) {
+        alert(`Connection Error: ${errorMessage}\n\nPlease ensure:\n1. The backend server is running on port 8080\n2. The server is accessible\n3. There are no firewall issues\n\nYour changes have been saved to local storage and will be synced when the server is available.`);
+      } else if (errorMessage.includes('local storage')) {
+        alert(errorMessage + ' Please check your API connection.');
+      } else {
+        alert(`Error: ${errorMessage}`);
+      }
     }
   };
 
@@ -191,14 +234,45 @@ export default function AdminTechnologyPage() {
                   <input type="text" name="title" defaultValue={getFieldValue('hero', 'title')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Technology" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Background Image URL</label>
-                  <input type="url" name="bgImageUrl" defaultValue={getFieldValue('hero', 'bgImageUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/hero-bg.jpg" />
-                  <div className="mt-2">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'bgImageUrl')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Background Image</label>
+                  <p className="text-xs text-gray-500 mb-2">Upload an image file or enter an image URL</p>
+                  <div className="mt-2 mb-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Upload Image:</label>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleImageUpload(e, 'bgImageUrl', 'hero')} 
+                      disabled={uploading['hero_bgImageUrl']}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
+                    />
+                    {uploading['hero_bgImageUrl'] && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        <i className="ri-loader-4-line animate-spin mr-1"></i>Uploading...
+                      </p>
+                    )}
                   </div>
-                  {getFieldValue('hero', 'bgImageUrl') && (
+                  <div className="mt-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Or enter image URL:</label>
+                    <input 
+                      type="text" 
+                      name="bgImageUrl" 
+                      id="hero-bgImageUrl"
+                      defaultValue={getFieldValue('hero', 'bgImageUrl')} 
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
+                      placeholder="https://example.com/hero-bg.jpg or /uploads/images/..." 
+                    />
+                  </div>
+                  {(getFieldValue('hero', 'bgImageUrl') || imageUrls['hero_bgImageUrl']) && (
                     <div className="mt-2">
-                      <img src={getFieldValue('hero', 'bgImageUrl')} alt="Preview" className="w-full h-32 object-cover rounded-lg border border-gray-200" />
+                      <img 
+                        src={normalizeImageUrl(imageUrls['hero_bgImageUrl'] || getFieldValue('hero', 'bgImageUrl'))} 
+                        alt="Preview" 
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200" 
+                        onError={(e) => {
+                          console.error('Image failed to load:', e);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
                     </div>
                   )}
                 </div>
@@ -225,14 +299,45 @@ export default function AdminTechnologyPage() {
                   <input type="text" name="title" defaultValue={getFieldValue('intro', 'title')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Advanced Technology for Superior Performance" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
-                  <input type="url" name="imageUrl" defaultValue={getFieldValue('intro', 'imageUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/image.jpg" />
-                  <div className="mt-2">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'imageUrl')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
+                  <p className="text-xs text-gray-500 mb-2">Upload an image file or enter an image URL</p>
+                  <div className="mt-2 mb-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Upload Image:</label>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleImageUpload(e, 'imageUrl', 'intro')} 
+                      disabled={uploading['intro_imageUrl']}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
+                    />
+                    {uploading['intro_imageUrl'] && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        <i className="ri-loader-4-line animate-spin mr-1"></i>Uploading...
+                      </p>
+                    )}
                   </div>
-                  {getFieldValue('intro', 'imageUrl') && (
+                  <div className="mt-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Or enter image URL:</label>
+                    <input 
+                      type="text" 
+                      name="imageUrl" 
+                      id="intro-imageUrl"
+                      defaultValue={getFieldValue('intro', 'imageUrl')} 
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
+                      placeholder="https://example.com/image.jpg or /uploads/images/..." 
+                    />
+                  </div>
+                  {(getFieldValue('intro', 'imageUrl') || imageUrls['intro_imageUrl']) && (
                     <div className="mt-2">
-                      <img src={getFieldValue('intro', 'imageUrl')} alt="Preview" className="w-full h-48 object-cover rounded-lg border border-gray-200" />
+                      <img 
+                        src={normalizeImageUrl(imageUrls['intro_imageUrl'] || getFieldValue('intro', 'imageUrl'))} 
+                        alt="Preview" 
+                        className="w-full h-48 object-cover rounded-lg border border-gray-200" 
+                        onError={(e) => {
+                          console.error('Image failed to load:', e);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
                     </div>
                   )}
                 </div>
@@ -350,31 +455,55 @@ export default function AdminTechnologyPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
-                  <div className="flex gap-2">
+                  <p className="text-xs text-gray-500 mb-2">Upload an image file or enter an image URL</p>
+                  <div className="mt-2 mb-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Upload Image:</label>
                     <input 
-                      type="url" 
-                      name="imageUrl" 
-                      id="technical-advantages-imageUrl"
-                      defaultValue={getFieldValue('technical-advantages', 'imageUrl')} 
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
-                      placeholder="https://example.com/image.jpg" 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleImageUpload(e, 'imageUrl', 'technical-advantages')} 
+                      disabled={uploading['technical-advantages_imageUrl']}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
                     />
-                    {(imageUrls['technical-advantages_imageUrl'] || getFieldValue('technical-advantages', 'imageUrl')) && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage('imageUrl', 'technical-advantages')}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
-                      >
-                        <i className="ri-delete-bin-line mr-2"></i>Remove
-                      </button>
+                    {uploading['technical-advantages_imageUrl'] && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        <i className="ri-loader-4-line animate-spin mr-1"></i>Uploading...
+                      </p>
                     )}
                   </div>
                   <div className="mt-2">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'imageUrl', 'technical-advantages')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Or enter image URL:</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        name="imageUrl" 
+                        id="technical-advantages-imageUrl"
+                        defaultValue={getFieldValue('technical-advantages', 'imageUrl')} 
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
+                        placeholder="https://example.com/image.jpg or /uploads/images/..." 
+                      />
+                      {(imageUrls['technical-advantages_imageUrl'] || getFieldValue('technical-advantages', 'imageUrl')) && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage('imageUrl', 'technical-advantages')}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        >
+                          <i className="ri-delete-bin-line mr-2"></i>Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {(imageUrls['technical-advantages_imageUrl'] || getFieldValue('technical-advantages', 'imageUrl')) && (
                     <div className="mt-2">
-                      <img src={imageUrls['technical-advantages_imageUrl'] || getFieldValue('technical-advantages', 'imageUrl')} alt="Preview" className="w-full h-48 object-cover rounded-lg border border-gray-200" />
+                      <img 
+                        src={normalizeImageUrl(imageUrls['technical-advantages_imageUrl'] || getFieldValue('technical-advantages', 'imageUrl'))} 
+                        alt="Preview" 
+                        className="w-full h-48 object-cover rounded-lg border border-gray-200" 
+                        onError={(e) => {
+                          console.error('Image failed to load:', e);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
                     </div>
                   )}
                 </div>
@@ -417,31 +546,55 @@ export default function AdminTechnologyPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
-                  <div className="flex gap-2">
+                  <p className="text-xs text-gray-500 mb-2">Upload an image file or enter an image URL</p>
+                  <div className="mt-2 mb-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Upload Image:</label>
                     <input 
-                      type="url" 
-                      name="imageUrl" 
-                      id="advantages-imageUrl"
-                      defaultValue={getFieldValue('advantages', 'imageUrl')} 
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
-                      placeholder="https://example.com/image.jpg" 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleImageUpload(e, 'imageUrl', 'advantages')} 
+                      disabled={uploading['advantages_imageUrl']}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
                     />
-                    {(imageUrls['advantages_imageUrl'] || getFieldValue('advantages', 'imageUrl')) && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage('imageUrl', 'advantages')}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
-                      >
-                        <i className="ri-delete-bin-line mr-2"></i>Remove
-                      </button>
+                    {uploading['advantages_imageUrl'] && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        <i className="ri-loader-4-line animate-spin mr-1"></i>Uploading...
+                      </p>
                     )}
                   </div>
                   <div className="mt-2">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'imageUrl', 'advantages')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Or enter image URL:</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        name="imageUrl" 
+                        id="advantages-imageUrl"
+                        defaultValue={getFieldValue('advantages', 'imageUrl')} 
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
+                        placeholder="https://example.com/image.jpg or /uploads/images/..." 
+                      />
+                      {(imageUrls['advantages_imageUrl'] || getFieldValue('advantages', 'imageUrl')) && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage('imageUrl', 'advantages')}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        >
+                          <i className="ri-delete-bin-line mr-2"></i>Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {(imageUrls['advantages_imageUrl'] || getFieldValue('advantages', 'imageUrl')) && (
                     <div className="mt-2">
-                      <img src={imageUrls['advantages_imageUrl'] || getFieldValue('advantages', 'imageUrl')} alt="Preview" className="w-full h-48 object-cover rounded-lg border border-gray-200" />
+                      <img 
+                        src={normalizeImageUrl(imageUrls['advantages_imageUrl'] || getFieldValue('advantages', 'imageUrl'))} 
+                        alt="Preview" 
+                        className="w-full h-48 object-cover rounded-lg border border-gray-200" 
+                        onError={(e) => {
+                          console.error('Image failed to load:', e);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
                     </div>
                   )}
                 </div>
@@ -484,31 +637,55 @@ export default function AdminTechnologyPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
-                  <div className="flex gap-2">
+                  <p className="text-xs text-gray-500 mb-2">Upload an image file or enter an image URL</p>
+                  <div className="mt-2 mb-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Upload Image:</label>
                     <input 
-                      type="url" 
-                      name="imageUrl" 
-                      id="benefits-imageUrl"
-                      defaultValue={getFieldValue('benefits', 'imageUrl')} 
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
-                      placeholder="https://example.com/image.jpg" 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleImageUpload(e, 'imageUrl', 'benefits')} 
+                      disabled={uploading['benefits_imageUrl']}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
                     />
-                    {(imageUrls['benefits_imageUrl'] || getFieldValue('benefits', 'imageUrl')) && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage('imageUrl', 'benefits')}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
-                      >
-                        <i className="ri-delete-bin-line mr-2"></i>Remove
-                      </button>
+                    {uploading['benefits_imageUrl'] && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        <i className="ri-loader-4-line animate-spin mr-1"></i>Uploading...
+                      </p>
                     )}
                   </div>
                   <div className="mt-2">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'imageUrl', 'benefits')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Or enter image URL:</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        name="imageUrl" 
+                        id="benefits-imageUrl"
+                        defaultValue={getFieldValue('benefits', 'imageUrl')} 
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
+                        placeholder="https://example.com/image.jpg or /uploads/images/..." 
+                      />
+                      {(imageUrls['benefits_imageUrl'] || getFieldValue('benefits', 'imageUrl')) && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage('imageUrl', 'benefits')}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        >
+                          <i className="ri-delete-bin-line mr-2"></i>Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {(imageUrls['benefits_imageUrl'] || getFieldValue('benefits', 'imageUrl')) && (
                     <div className="mt-2">
-                      <img src={imageUrls['benefits_imageUrl'] || getFieldValue('benefits', 'imageUrl')} alt="Preview" className="w-full h-48 object-cover rounded-lg border border-gray-200" />
+                      <img 
+                        src={normalizeImageUrl(imageUrls['benefits_imageUrl'] || getFieldValue('benefits', 'imageUrl'))} 
+                        alt="Preview" 
+                        className="w-full h-48 object-cover rounded-lg border border-gray-200" 
+                        onError={(e) => {
+                          console.error('Image failed to load:', e);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
                     </div>
                   )}
                 </div>

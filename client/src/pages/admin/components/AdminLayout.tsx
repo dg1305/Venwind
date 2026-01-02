@@ -21,10 +21,22 @@ export default function AdminLayout({ children, pageName, pagePath }: AdminLayou
       navigate('/login');
       return;
     }
-  }, [navigate]);
+
+    // Check if investor user is trying to access non-investor pages
+    const userType = localStorage.getItem('userType') || 'Admin';
+    if (userType === 'Investors') {
+      // Only allow access to investor relations page
+      if (!pagePath.includes('investor-relations')) {
+        navigate('/admin/investor-relations');
+        return;
+      }
+    }
+  }, [navigate, pagePath]);
 
   const handleLogout = () => {
     localStorage.removeItem('isAdminLoggedIn');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('userId');
     navigate('/login');
   };
 

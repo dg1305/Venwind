@@ -9,7 +9,7 @@
  * - Type-safe with TypeScript
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export interface CMSContent {
   data: any;
@@ -56,7 +56,12 @@ export async function getCMSData(
   // Try API first (source of truth)
   if (!skipCache) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/cms/page/${page}/section/${section}`);
+      // Use relative path if API_BASE_URL is empty (works with Vite proxy)
+      const apiUrl = API_BASE_URL 
+        ? `${API_BASE_URL}/api/admin/cms/page/${page}/section/${section}`
+        : `/api/admin/cms/page/${page}/section/${section}`;
+      
+      const response = await fetch(apiUrl);
       
       if (response.ok) {
         const result: CMSResponse = await response.json();
@@ -132,16 +137,38 @@ export async function saveCMSData(
   const storageKey = `cms_${page}_${section}`;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/admin/cms/page/${page}/section/${section}`, {
+    // Use relative path if API_BASE_URL is empty (works with Vite proxy)
+    const apiUrl = API_BASE_URL 
+      ? `${API_BASE_URL}/api/admin/cms/page/${page}/section/${section}`
+      : `/api/admin/cms/page/${page}/section/${section}`;
+
+    console.log('Saving CMS data to:', apiUrl, 'Data:', data);
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
+    }).catch((fetchError) => {
+      // Handle network errors (CORS, connection refused, etc.)
+      console.error('Fetch error:', fetchError);
+      throw new Error(`Network error: ${fetchError.message}. Please ensure the server is running and accessible.`);
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to save CMS data: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      let errorMessage = `Failed to save CMS data: ${response.status} ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        // Use default error message
+        if (errorText) {
+          errorMessage += ` - ${errorText}`;
+        }
+      }
+      throw new Error(errorMessage);
     }
 
     const result: CMSResponse = await response.json();
@@ -175,9 +202,45 @@ export async function saveCMSData(
     );
 
     return savedContent;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error saving CMS data for ${page}/${section}:`, error);
-    throw error;
+    
+    // Check if it's a network error
+    const isNetworkError = error.message?.includes('Network error') || 
+                          error.message?.includes('Failed to fetch') ||
+                          error.message?.includes('fetch');
+    
+    // Fallback: Save to localStorage if API fails
+    const fallbackContent: CMSContent = {
+      data: data,
+      updatedAt: new Date().toISOString(),
+    };
+    
+    const storageItem: CMSStorageItem = {
+      data: fallbackContent.data,
+      updatedAt: fallbackContent.updatedAt,
+    };
+    localStorage.setItem(storageKey, JSON.stringify(storageItem));
+    
+    // Still dispatch event for local updates
+    window.dispatchEvent(
+      new CustomEvent('cmsUpdate', {
+        detail: { 
+          page, 
+          section, 
+          data: fallbackContent.data, 
+          updatedAt: fallbackContent.updatedAt 
+        },
+      })
+    );
+    
+    // Provide helpful error message
+    if (isNetworkError) {
+      throw new Error('Cannot connect to server. Please ensure the backend server is running on port 8080. Your changes have been saved to local storage.');
+    }
+    
+    // Re-throw the error so the UI can show it
+    throw new Error(error.message || 'Failed to save CMS data. Saved to local storage as backup.');
   }
 }
 
@@ -239,4 +302,36 @@ export function clearCMSCache(page?: string, section?: string): void {
       }
     });
   }
+}
+
+/**
+ * Normalize image URL to ensure it's a valid absolute URL
+ * Handles both relative paths (starting with /) and absolute URLs
+ * 
+ * @param imageUrl - Image URL (can be relative or absolute)
+ * @returns Normalized absolute URL
+ */
+export function normalizeImageUrl(imageUrl: string | undefined | null): string {
+  if (!imageUrl) return '';
+  
+  // If it's already an absolute URL (starts with http:// or https://), return as is
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  // If it's a relative path (starts with /), prepend API_BASE_URL
+  if (imageUrl.startsWith('/')) {
+    // Remove trailing slash from API_BASE_URL if present
+    const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    return `${baseUrl}${imageUrl}`;
+  }
+  
+  // If it's a data URL (base64), return as is
+  if (imageUrl.startsWith('data:')) {
+    return imageUrl;
+  }
+  
+  // For any other case, try to construct a full URL
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  return `${baseUrl}/${imageUrl}`;
 }

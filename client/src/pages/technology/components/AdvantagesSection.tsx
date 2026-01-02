@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import { getCMSData } from '../../../utils/cms';
+import { getCMSData, normalizeImageUrl } from '../../../utils/cms';
 
 interface AdvantageItem {
   title: string;
@@ -90,9 +90,9 @@ export default function AdvantagesSection() {
 
   return (
     <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-6 lg:px-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div data-aos="fade-right">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+          <div data-aos="fade-right" className="pr-8">
             <h2 className="text-gray-900 text-4xl lg:text-5xl font-bold mb-8">
               {content.title || 'Advantages over Competitors'}
             </h2>
@@ -127,14 +127,15 @@ export default function AdvantagesSection() {
           </div>
 
           {content.imageUrl && (
-            <div data-aos="fade-left" className="hidden lg:block relative rounded-lg overflow-hidden">
-              <div className="relative w-full h-full">
+            <div data-aos="fade-left" className="hidden lg:block pl-0">
+              <div className="relative w-full rounded-r-lg rounded-l-none overflow-hidden">
                 <img
-                  src={content.imageUrl}
+                  src={normalizeImageUrl(content.imageUrl)}
                   alt="Wind Turbine Advantages"
-                  className="w-full h-auto object-cover"
+                  className="w-full object-cover rounded-r-lg rounded-l-none"
+                  style={{ maxHeight: '600px', height: 'auto' }}
                 />
-                <div className="absolute inset-0 bg-black/40"></div>
+                <div className="absolute inset-0 bg-black/40 rounded-r-lg rounded-l-none"></div>
               </div>
             </div>
           )}

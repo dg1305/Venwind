@@ -3,33 +3,30 @@ const Type = require("../utils/userTypes");
 
 const validation = {
   createUserSchema: [
-    check("firstName").exists().withMessage("First Name is required").notEmpty().withMessage("First Name should not be empty"),
-    check("lastName").exists().withMessage("Last Name is required").notEmpty().withMessage("Last Name should not be empty"),
-    check("mobileNumber").exists().withMessage("Phone is required").notEmpty().withMessage("Mobile Number should not be empty"),
-    check("email")
+    check("username")
       .exists()
-      .withMessage("Email is required")
+      .withMessage("Username is required")
+      .notEmpty()
+      .withMessage("Username should not be empty"),
+    check("firstName").optional().notEmpty().withMessage("First Name should not be empty"),
+    check("lastName").optional().notEmpty().withMessage("Last Name should not be empty"),
+    check("mobileNumber").optional().notEmpty().withMessage("Mobile Number should not be empty"),
+    check("email")
+      .optional()
       .isEmail()
       .withMessage("Must be a valid email")
       .normalizeEmail(),
-    // check("password")
-    //   .exists()
-    //   .withMessage("Password is required")
-    //   .notEmpty()
-    //   .isLength({ min: 6 })
-    //   .withMessage("Password must contain at least 6 characters"),
     check("userType")
       .optional()
-      .isIn([Type.SuperAdmin, Type.Admin, Type.User])
+      .isIn([Type.Admin, Type.Investors])
       .withMessage("Invalid Role type"),
   ],
   validateLogin: [
-    check("email")
+    check("username")
       .exists()
-      .withMessage("Email is required")
-      .isEmail()
-      .withMessage("Must be a valid email")
-      .normalizeEmail(),
+      .withMessage("Username is required")
+      .notEmpty()
+      .withMessage("Username must be filled"),
     check("password")
       .exists()
       .withMessage("Password is required")

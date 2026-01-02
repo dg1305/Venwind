@@ -32,6 +32,11 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: uuidv4,
         primaryKey: true,
       },
+      username: {
+        type: DataTypes.STRING(100),
+        unique: true,
+        allowNull: false,
+      },
       first_name: DataTypes.STRING(85),
       last_name: DataTypes.STRING(85),
       mobile_number: DataTypes.STRING(20),
@@ -39,7 +44,7 @@ module.exports = (sequelize, DataTypes) => {
       password: DataTypes.STRING,
       api_key: DataTypes.TEXT,
       user_type: {
-        type: DataTypes.ENUM("Admin", "CHRO", "HR"),
+        type: DataTypes.ENUM("Admin", "Investors"),
       },
       is_active: {
         type: DataTypes.BOOLEAN,

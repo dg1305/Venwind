@@ -56,7 +56,8 @@ app.use(bodyParser.urlencoded({ limit: "100mb", extended: true }));
 
 
 // Routes
-app.use("/auth", require("./routes/auth"));
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/users", require("./routes/users"));
 app.use("/cms", require("./routes/cms"));
 app.use("/api/cms/home", require("./routes/home_cms"));
 app.use("/api/cms/about", require("./routes/about_cms"));
@@ -64,6 +65,7 @@ app.use("/api/cms/capabilities", require("./routes/capabilities_cms"));
 app.use("/api/cms/sustainability", require("./routes/sustainability_cms"));
 app.use("/api/cms/products", require("./routes/products_cms"));
 app.use("/api/admin/cms", require("./routes/admin_cms"));
+app.use("/api/admin/users", require("./routes/cms_users"));
 
 
 

@@ -11,23 +11,41 @@ export default function AdminIndexPage() {
       navigate('/login');
       return;
     }
+
+    // Redirect investors to investor relations page
+    const userType = localStorage.getItem('userType') || 'Admin';
+    if (userType === 'Investors') {
+      navigate('/admin/investor-relations');
+      return;
+    }
   }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('isAdminLoggedIn');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('userId');
     navigate('/login');
   };
 
-  const adminPages = [
-    { id: 'home', label: 'Home', icon: 'ri-home-4-line', path: '/admin/home', pagePath: '/' },
-    { id: 'about', label: 'About', icon: 'ri-information-line', path: '/admin/about', pagePath: '/about-us' },
-    { id: 'investor-relations', label: 'Investor Relations', icon: 'ri-file-chart-line', path: '/admin/investor-relations', pagePath: '/investor-relations' },
-    { id: 'products', label: 'Products', icon: 'ri-product-hunt-line', path: '/admin/products', pagePath: '/products' },
-    { id: 'technology', label: 'Technology', icon: 'ri-lightbulb-line', path: '/admin/technology', pagePath: '/technology' },
-    { id: 'sustainability', label: 'Sustainability', icon: 'ri-leaf-line', path: '/admin/sustainability', pagePath: '/sustainability' },
-    { id: 'careers', label: 'Careers', icon: 'ri-briefcase-line', path: '/admin/careers', pagePath: '/careers' },
-    { id: 'contact', label: 'Contact', icon: 'ri-mail-line', path: '/admin/contact', pagePath: '/contact' }
+  const userType = localStorage.getItem('userType') || 'Admin';
+  const isInvestor = userType === 'Investors';
+
+  const allAdminPages = [
+    { id: 'home', label: 'Home', icon: 'ri-home-4-line', path: '/admin/home', pagePath: '/', adminOnly: true },
+    { id: 'about', label: 'About', icon: 'ri-information-line', path: '/admin/about', pagePath: '/about-us', adminOnly: true },
+    { id: 'investor-relations', label: 'Investor Relations', icon: 'ri-file-chart-line', path: '/admin/investor-relations', pagePath: '/investor-relations', adminOnly: false },
+    { id: 'products', label: 'Products', icon: 'ri-product-hunt-line', path: '/admin/products', pagePath: '/products', adminOnly: true },
+    { id: 'technology', label: 'Technology', icon: 'ri-lightbulb-line', path: '/admin/technology', pagePath: '/technology', adminOnly: true },
+    { id: 'sustainability', label: 'Sustainability', icon: 'ri-leaf-line', path: '/admin/sustainability', pagePath: '/sustainability', adminOnly: true },
+    { id: 'careers', label: 'Careers', icon: 'ri-briefcase-line', path: '/admin/careers', pagePath: '/careers', adminOnly: true },
+    { id: 'contact', label: 'Contact', icon: 'ri-mail-line', path: '/admin/contact', pagePath: '/contact', adminOnly: true },
+    { id: 'users', label: 'User Management', icon: 'ri-user-settings-line', path: '/admin/users', pagePath: '/admin/users', adminOnly: true }
   ];
+
+  // Filter pages based on user type
+  const adminPages = isInvestor 
+    ? allAdminPages.filter(page => !page.adminOnly)
+    : allAdminPages;
 
   return (
     <div className="min-h-screen bg-gray-50">

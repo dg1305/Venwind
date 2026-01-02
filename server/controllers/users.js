@@ -12,6 +12,7 @@ const usersController = {
       const users = await User.findAll({
         attributes: [
           "id",
+          "username",
           "first_name",
           "last_name",
           "mobile_number",
@@ -41,6 +42,7 @@ const usersController = {
       const user = await User.findByPk(user_id, {
         attributes: [
           "id",
+          "username",
           "first_name",
           "last_name",
           "mobile_number",
@@ -75,16 +77,23 @@ const usersController = {
       if (!errors.isEmpty()) {
         return Response.responseStatus(res, 400, "Validation Failed", errors);
       }
-      const createdBy = req.userData.id;
+      const createdBy = req.userData?.id || null;
       const {
+        username,
         firstName,
         lastName,
         email,
         mobileNumber,
-        password = DEFAULT_PASSWORD,
-        userType = Type.User,
+        password,
+        userType = Type.Admin,
       } = req.body;
+      
+      if (!password) {
+        return Response.responseStatus(res, 400, "Password is required");
+      }
+      
       const user = {
+        username,
         first_name: firstName,
         last_name: lastName,
         mobile_number: mobileNumber,
@@ -94,9 +103,16 @@ const usersController = {
         created_by: createdBy,
       };
 
-      const result_email = await User.findOne({ where: { email } });
-      if (result_email) {
-        return Response.responseStatus(res, 409, "Email already exists");
+      const result_username = await User.findOne({ where: { username } });
+      if (result_username) {
+        return Response.responseStatus(res, 409, "Username already exists");
+      }
+      
+      if (email) {
+        const result_email = await User.findOne({ where: { email } });
+        if (result_email) {
+          return Response.responseStatus(res, 409, "Email already exists");
+        }
       }
       // Hash the password before storing in the database
       const hashedPassword = bcrypt.hashSync(user.password, saltRounds);
@@ -110,6 +126,7 @@ const usersController = {
       const newUser = await User.findByPk(createdUser.id, {
         attributes: [
           "id",
+          "username",
           "first_name",
           "last_name",
           "mobile_number",
@@ -142,7 +159,7 @@ const usersController = {
         return Response.responseStatus(res, 400, "Validation Failed", errors);
       }
       const user_id = req.params.id;
-      const modifiedBy = req.userData.id;
+      const modifiedBy = req.userData?.id || null;
       // Check if user exists
       const exists = await User.findByPk(user_id);
       if (!exists) {
@@ -150,6 +167,7 @@ const usersController = {
       }
 
       const {
+        username,
         firstName,
         lastName,
         email,
@@ -167,6 +185,15 @@ const usersController = {
         is_active: isActive,
         modified_by: modifiedBy,
       };
+      
+      if (username) {
+        // Check if username is already taken by another user
+        const existingUsername = await User.findOne({ where: { username } });
+        if (existingUsername && existingUsername.id !== user_id) {
+          return Response.responseStatus(res, 409, "Username already exists");
+        }
+        user.username = username;
+      }
       // Hash the password before storing in the database
       if (password) {
         const hashedPassword = bcrypt.hashSync(password, saltRounds);
@@ -196,7 +223,7 @@ const usersController = {
   deleteUserById: async (req, res) => {
     try {
       const userId = req.params.id;
-      const deletedBy = req.userData.id;
+      const deletedBy = req.userData?.id || null;
 
       // Check if user exists
       const user = await User.findByPk(userId);
@@ -214,6 +241,47 @@ const usersController = {
       );
     } catch (error) {
       console.error("Error deleting user:", error);
+      return Response.responseStatus(res, 500, "Internal server error", {
+        error: error.message,
+      });
+    }
+  },
+  changePassword: async (req, res) => {
+    try {
+      const user_id = req.params.id;
+      const { password } = req.body;
+      
+      if (!password) {
+        return Response.responseStatus(res, 400, "Password is required");
+      }
+
+      // Check if user exists
+      const exists = await User.findByPk(user_id);
+      if (!exists) {
+        return Response.responseStatus(res, 404, `User (${user_id}) not found`);
+      }
+
+      // Hash the password before storing in the database
+      const hashedPassword = bcrypt.hashSync(password, saltRounds);
+      const result = await User.update(
+        { password: hashedPassword },
+        { where: { id: user_id } }
+      );
+      
+      if (!result) {
+        return Response.responseStatus(
+          res,
+          404,
+          `Failed To Update Password for User(${user_id})`
+        );
+      }
+      return Response.responseStatus(
+        res,
+        200,
+        `Password Updated Successfully for User(${user_id})`
+      );
+    } catch (error) {
+      console.log(error);
       return Response.responseStatus(res, 500, "Internal server error", {
         error: error.message,
       });

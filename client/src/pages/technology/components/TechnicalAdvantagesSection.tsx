@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import { getCMSData } from '../../../utils/cms';
+import { getCMSData, normalizeImageUrl } from '../../../utils/cms';
 
 interface AdvantageItem {
   title: string;
@@ -35,6 +35,8 @@ export default function TechnicalAdvantagesSection() {
     items: defaultAdvantages,
   });
   const [loading, setLoading] = useState(true);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     AOS.init({
@@ -91,6 +93,27 @@ export default function TechnicalAdvantagesSection() {
     setOpenIndex(openIndex === index ? null : index);
   };
 
+  useEffect(() => {
+    const matchHeight = () => {
+      if (contentRef.current && imageContainerRef.current) {
+        const contentHeight = contentRef.current.offsetHeight;
+        const imageImg = imageContainerRef.current.querySelector('img');
+        if (imageImg) {
+          imageContainerRef.current.style.height = `${contentHeight}px`;
+          imageImg.style.height = `${contentHeight}px`;
+        }
+      }
+    };
+
+    // Match height initially and after content changes
+    matchHeight();
+    
+    // Also match height when accordion opens/closes
+    const timer = setTimeout(matchHeight, 100);
+    
+    return () => clearTimeout(timer);
+  }, [openIndex, content, loading]);
+
   if (loading) {
     return (
       <section className="py-20 bg-gray-50">
@@ -107,23 +130,37 @@ export default function TechnicalAdvantagesSection() {
 
   return (
     <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-6 lg:px-16">
-        <h2 className="text-gray-900 text-4xl lg:text-5xl font-bold text-center mb-16" data-aos="fade-up">
-          {content.title || 'Technical Advantages'}
-        </h2>
-        
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-16">
+        <div className="grid lg:grid-cols-2 gap-0 items-start">
           {content.imageUrl && (
-            <div className="hidden lg:block" data-aos="fade-right">
+            <div ref={imageContainerRef} className="hidden lg:block pr-0" data-aos="fade-right">
               <img 
-                src={content.imageUrl}
+                src={normalizeImageUrl(content.imageUrl)}
                 alt="Wind turbine technical advantages"
-                className="w-full h-auto object-cover rounded-lg"
+                className="w-full object-cover rounded-l-lg rounded-r-none"
+                style={{ objectPosition: 'top' }}
               />
             </div>
           )}
           
-          <div className="space-y-4">
+          <div ref={contentRef} className="pl-8">
+            <div className="mb-8" data-aos="fade-up">
+              <h2 className="text-gray-900 text-4xl lg:text-5xl font-bold">
+                {content.title ? (
+                  content.title.split(' ').map((word, index, arr) => (
+                    <span key={index}>
+                      {word}
+                      {index < arr.length - 1 && <br />}
+                    </span>
+                  ))
+                ) : (
+                  <>
+                    Technical<br />Advantages
+                  </>
+                )}
+              </h2>
+            </div>
+            <div className="space-y-4">
             {advantages.map((advantage, index) => (
               <div 
                 key={index}
@@ -154,6 +191,7 @@ export default function TechnicalAdvantagesSection() {
                 </div>
               </div>
             ))}
+            </div>
           </div>
         </div>
       </div>

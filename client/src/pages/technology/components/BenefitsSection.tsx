@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import { getCMSData } from '../../../utils/cms';
+import { getCMSData, normalizeImageUrl } from '../../../utils/cms';
 
 interface BenefitItem {
   title: string;
@@ -90,18 +90,20 @@ export default function BenefitsSection() {
   return (
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-stretch">
           {content.imageUrl && (
-            <div data-aos="fade-right" className="hidden lg:block">
-              <img
-                src={content.imageUrl}
-                alt="Wind Turbine Benefits"
-                className="w-full h-auto object-cover rounded-lg"
-              />
+            <div data-aos="fade-right" className="hidden lg:block h-full">
+              <div className="h-full flex items-center">
+                <img
+                  src={normalizeImageUrl(content.imageUrl)}
+                  alt="Wind Turbine Benefits"
+                  className="w-full h-full max-h-[600px] object-cover rounded-lg"
+                />
+              </div>
             </div>
           )}
 
-          <div data-aos="fade-left">
+          <div data-aos="fade-left" className="flex flex-col justify-center">
             <h2 className="text-gray-900 text-4xl lg:text-5xl font-bold mb-8">
               {content.title || 'Other Benefits'}
             </h2>
