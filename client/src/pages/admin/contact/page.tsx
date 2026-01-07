@@ -148,7 +148,7 @@ export default function AdminContactPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                  <input type="tel" name="phone" defaultValue={getFieldValue('contact-info', 'phone')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="+91 (44) 69908410" />
+                  <input type="tel" name="phone" defaultValue={getFieldValue('contact-info', 'phone')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="+91 044 - 6990 8410" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>

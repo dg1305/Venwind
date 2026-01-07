@@ -21,11 +21,11 @@ const defaultContactInfo: ContactInfoContent = {
   title: 'Have questions?\nGet in touch!',
   companyName: 'Venwind Refex Power Limited',
   address: 'CIN: U27101TN2024PLC175572\n2nd floor, Refex Towers, 313, Valluvar Kottam High Road, Nungambakkam,\nChennai-600034, Tamil Nadu, India',
-  phone: '+91 (44) 69908410',
+  phone: '+91 044 - 6990 8410',
   email: 'contact@venwindrefex.com',
   facebookUrl: 'https://www.facebook.com/refexindustrieslimited/',
   twitterUrl: 'https://x.com/GroupRefex',
-  linkedinUrl: 'https://www.linkedin.com/company/refex-group/',
+  linkedinUrl: 'https://in.linkedin.com/company/venwind-refex-power-limited',
   instagramUrl: 'https://www.instagram.com/refexgroup/',
   youtubeUrl: 'https://www.youtube.com/@refexgroup',
 };

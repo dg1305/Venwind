@@ -180,7 +180,7 @@ export default function Footer() {
                 <i className="ri-twitter-x-fill text-white text-lg"></i>
               </a>
               <a 
-                href="https://www.linkedin.com/company/refex-group/" 
+                href="https://in.linkedin.com/company/venwind-refex-power-limited" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-gray-800 hover:bg-[#8DC63F] flex items-center justify-center transition-colors cursor-pointer"

@@ -5,7 +5,7 @@ import { getCMSData, normalizeImageUrl } from '../../../utils/cms';
 
 interface AdvantageItem {
   title: string;
-  content: string | React.ReactNode;
+  content: string;
 }
 
 interface AdvantagesContent {
@@ -19,17 +19,12 @@ const defaultAdvantages: AdvantageItem[] = [
   { title: 'Larger Rotor Diameter and Higher Hub Heights in its Class', content: 'Captures more wind energy, higher tip speed ratio' },
   { title: 'Flexible Modular Design', content: 'Supports enhancement to higher capacity and higher rotor diameter' },
   { title: 'Supports application scenarios such as energy storage and distributed wind power', content: 'Designed to operate at higher capacities (4.8MW and above)' },
-  { title: 'Grid Connection', content: (
-    <ul className="list-disc pl-5 space-y-2">
-      <li>Operates at a constant power factor, independent of grid voltage</li>
-      <li>No need for external grid excitation</li>
-    </ul>
-  ) },
+  { title: 'Grid Connection', content: 'Operates at a constant power factor, independent of grid voltage. No need for external grid excitation' },
   { title: 'Low cut-in wind speed', content: 'Cut-in wind speed 2.5m/s' },
 ];
 
 export default function AdvantagesSection() {
-  const [openIndex, setOpenIndex] = useState<number>(-1);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [content, setContent] = useState<AdvantagesContent>({
     title: 'Advantages over Competitors',
     items: defaultAdvantages,
@@ -50,9 +45,11 @@ export default function AdvantagesSection() {
         const result = await getCMSData('technology', 'advantages', {
           defaultValue: { title: 'Advantages over Competitors', items: defaultAdvantages },
         });
+        const imageUrl = result.data.imageUrl && result.data.imageUrl.trim() ? result.data.imageUrl.trim() : undefined;
+        
         setContent({
           title: result.data.title || 'Advantages over Competitors',
-          imageUrl: result.data.imageUrl && result.data.imageUrl.trim() ? result.data.imageUrl : undefined,
+          imageUrl,
           items: (result.data.items && result.data.items.length > 0) ? result.data.items : defaultAdvantages,
         });
       } catch (error) {
@@ -76,6 +73,38 @@ export default function AdvantagesSection() {
     };
   }, []);
 
+  // Match image height to content height
+  useEffect(() => {
+    if (!content.imageUrl || loading) return;
+
+    const updateImageHeight = () => {
+      if (contentRef.current && imageContainerRef.current) {
+        const contentHeight = contentRef.current.offsetHeight;
+        if (contentHeight > 0) {
+          imageContainerRef.current.style.height = `${contentHeight}px`;
+        }
+      }
+    };
+
+    // Initial update after render
+    const timer1 = setTimeout(updateImageHeight, 100);
+    
+    // Update on resize
+    window.addEventListener('resize', updateImageHeight);
+    
+    // Update when accordion state changes
+    const timer2 = setTimeout(updateImageHeight, 200);
+    
+    return () => {
+      window.removeEventListener('resize', updateImageHeight);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [openIndex, content.imageUrl, content.items, loading]);
+
+  const toggleAccordion = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
 
   if (loading) {
     return (
@@ -92,54 +121,76 @@ export default function AdvantagesSection() {
   const advantages = content.items || defaultAdvantages;
 
   return (
-    <section className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center py-28">
-      {/* Content Left */}
-      <div ref={contentRef} className={`${content.imageUrl ? 'col-span-12 lg:col-span-6' : 'col-span-12'} pt-24`} data-aos="fade-right">
-        <h2 className="text-gray-900 text-3xl font-semibold mb-6">
-          {content.title || 'Advantages over Competitors'}
-        </h2>
-        
-        <ul className="space-y-2">
-          {advantages.map((advantage, index) => (
-            <li key={index} className="border-b border-gray-200">
-              <button
-                onClick={() => setOpenIndex(openIndex === index ? -1 : index)}
-                className="w-full flex items-center justify-between py-3 text-left transition-colors cursor-pointer"
-                style={{ color: openIndex === index ? '#8DC63F' : '#111827' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#8DC63F'}
-                onMouseLeave={(e) => e.currentTarget.style.color = openIndex === index ? '#8DC63F' : '#111827'}
-              >
-                <span className="text-base font-semibold pr-4">
-                  {advantage.title}
-                </span>
-                <i className={`${openIndex === index ? 'ri-subtract-line' : 'ri-add-line'} text-2xl text-gray-600 flex-shrink-0`}></i>
-              </button>
-              <div
-                className={`overflow-hidden transition-all duration-300 ${
-                  openIndex === index ? 'max-h-96 pb-4' : 'max-h-0'
-                }`}
-              >
-                <div className="text-gray-700 text-sm leading-relaxed">
-                  {typeof advantage.content === 'string' ? advantage.content : advantage.content}
+    <section className="py-20 bg-white">
+      <div className="max-w-7xl mx-auto px-6 lg:px-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {/* Content Left */}
+          <div ref={contentRef} className={content.imageUrl ? '' : 'lg:col-span-2'}>
+            <div className="mb-6" data-aos="fade-right">
+              <h2 className="text-gray-900 text-3xl font-semibold mb-6">
+                {content.title || 'Advantages over Competitors'}
+              </h2>
+            </div>
+            
+            <div className="elementor-accordion bordered" style={{ borderTop: '1px solid #D4DFF2C7' }}>
+              {advantages.map((advantage, index) => (
+                <div key={index} className="elementor-accordion-item border-b border-gray-200" data-aos="fade-right" data-aos-delay={index * 50}>
+                  <div
+                    onClick={() => toggleAccordion(index)}
+                    className="elementor-tab-title w-full flex items-center text-left py-4 hover:bg-[#8DC63F]/10 transition-colors cursor-pointer group"
+                    role="button"
+                    aria-expanded={openIndex === index}
+                    tabIndex={0}
+                  >
+                    <span className="elementor-accordion-icon elementor-accordion-icon-left flex items-center justify-center flex-shrink-0 mr-4" aria-hidden="true">
+                      <span className={openIndex === index ? 'elementor-accordion-icon-opened' : 'elementor-accordion-icon-closed'}>
+                        {openIndex === index ? (
+                          <i className="ri-subtract-line text-xl text-[#8DC63F]"></i>
+                        ) : (
+                          <i className="ri-add-line text-xl text-[#8DC63F]"></i>
+                        )}
+                      </span>
+                    </span>
+                    <span 
+                      className="elementor-accordion-title text-gray-900 text-lg font-semibold flex-1 transition-colors group-hover:text-[#8DC63F] cursor-pointer"
+                      style={{ color: openIndex === index ? '#8DC63F' : undefined }}
+                    >
+                      {advantage.title}
+                    </span>
+                  </div>
+                  
+                  <div 
+                    className={`elementor-tab-content elementor-clearfix overflow-hidden transition-all duration-300 ${
+                      openIndex === index ? 'max-h-[500px] pb-4' : 'max-h-0'
+                    }`}
+                    role="region"
+                  >
+                    <div className="pl-10 pr-0">
+                      <p className="text-gray-700 text-sm leading-relaxed">
+                        {advantage.content}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Image Right */}
-      {content.imageUrl && (
-        <div ref={imageContainerRef} className="col-span-12 lg:col-span-6 hidden lg:block p-0" data-aos="fade-left">
-          <div className="w-full overflow-hidden">
-            <img
-              src={normalizeImageUrl(content.imageUrl)}
-              alt="Wind Turbine Advantages"
-              className="w-full h-auto object-contain max-h-[680px]"
-            />
+              ))}
+            </div>
           </div>
+
+          {/* Image Right */}
+          {content.imageUrl && (
+            <div ref={imageContainerRef} className="hidden lg:flex items-center" data-aos="fade-left">
+              <div className="w-full h-full flex items-center justify-center">  
+                <img 
+                  src={normalizeImageUrl(content.imageUrl)}
+                  alt="Advantages over competitors"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </section>
   );
 }
+

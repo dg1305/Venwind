@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global font family - DM Sans to match live site */
+@layer base {
+  html,
+  body {
+    font-family: 'DM Sans', sans-serif;
+  }
+}
+
 /* Prevent horizontal scrolling and overscroll */
 html,
 body {
