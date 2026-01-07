@@ -95,15 +95,15 @@ export default function TechnicalAdvantagesSection() {
   return (
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
           {/* Image Left */}
           {content.imageUrl && (
-            <div className="hidden lg:block" data-aos="fade-right">
-              <div className="w-full overflow-hidden">
+            <div className="hidden lg:block h-full min-h-[500px]" data-aos="fade-right">
+              <div className="w-full h-full overflow-hidden">
                 <img 
                   src={normalizeImageUrl(content.imageUrl)}
                   alt="Wind turbine technical advantages"
-                  className="w-full h-auto object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>

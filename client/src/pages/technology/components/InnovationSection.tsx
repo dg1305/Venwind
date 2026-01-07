@@ -113,11 +113,11 @@ export default function InnovationSection() {
           {content.title || 'Salient features'}
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 items-stretch">
           {visibleFeatures.map((feature, index) => (
             <div 
               key={index}
-              className="text-center"
+              className="text-center h-full flex flex-col"
               data-aos="fade-up"
               data-aos-delay={index * 100}
             >
@@ -146,7 +146,7 @@ export default function InnovationSection() {
                 <h3 className="text-gray-900 text-xl font-bold mb-4">{feature.title}</h3>
               )}
               {feature.description && feature.description.trim() && (
-                <p className="text-gray-700 text-base leading-relaxed">{feature.description}</p>
+                <p className="text-gray-700 text-base leading-relaxed flex-grow">{feature.description}</p>
               )}
             </div>
           ))}

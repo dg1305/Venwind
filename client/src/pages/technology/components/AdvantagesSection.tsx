@@ -179,11 +179,11 @@ export default function AdvantagesSection() {
           {/* Image Right */}
           {content.imageUrl && (
             <div ref={imageContainerRef} className="hidden lg:flex items-center" data-aos="fade-left">
-              <div className="w-full h-full flex items-center justify-center">  
+              <div className="w-full h-full overflow-hidden">  
                 <img 
                   src={normalizeImageUrl(content.imageUrl)}
                   alt="Advantages over competitors"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
