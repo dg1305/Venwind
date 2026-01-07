@@ -4,27 +4,63 @@ import { useCMSData } from '../hooks/useCMSData';
 
 export default function AdminProductsPage() {
   const [activeSection, setActiveSection] = useState('hero');
-  const { getFieldValue, loading } = useCMSData('products');
+  const { getFieldValue, loading, refreshData } = useCMSData('products');
+  const [uploadingIcons, setUploadingIcons] = useState<Record<string, boolean>>({});
+  const [iconUrls, setIconUrls] = useState<Record<string, string>>({});
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    const uploadKey = fieldName;
+    setUploadingIcons(prev => ({ ...prev, [uploadKey]: true }));
+    
     try {
       const formData = new FormData();
       formData.append('image', file);
-      const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
+      
+      // Use relative path if API_BASE_URL is empty (works with Vite proxy)
+      const uploadUrl = API_BASE_URL ? `${API_BASE_URL}/api/upload/image` : '/api/upload/image';
+      
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });
+      
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.imageUrl) {
+          // Construct full URL - if API_BASE_URL is empty, use relative path
+          const fullUrl = API_BASE_URL 
+            ? `${API_BASE_URL}${result.imageUrl}` 
+            : result.imageUrl;
+          
+          // Update state for immediate preview
+          setIconUrls(prev => ({ ...prev, [uploadKey]: fullUrl }));
+          
+          // Update the input field
           const input = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
-          if (input) input.value = `${API_BASE_URL}${result.imageUrl}`;
+          if (input) {
+            input.value = fullUrl;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          
+          alert('Icon uploaded successfully! Click "Save Changes" to save.');
+        } else {
+          alert('Failed to upload icon: ' + (result.error || 'Unknown error'));
         }
+      } else {
+        const errorText = await response.text();
+        alert('Failed to upload icon. Please try again.');
+        console.error('Upload error:', errorText);
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error uploading icon:', error);
+      alert('Failed to upload icon. Please try again.');
+    } finally {
+      setUploadingIcons(prev => ({ ...prev, [uploadKey]: false }));
+      e.target.value = '';
     }
   };
 
@@ -37,16 +73,27 @@ export default function AdminProductsPage() {
     // Special handling for array sections
     if (section === 'features' || section === 'specifications' || section === 'technical-benefits') {
       const items: any[] = [];
-      for (let i = 1; i <= 10; i++) {
+      const maxItems = section === 'features' ? 6 : (section === 'specifications' ? 6 : 10);
+      
+      for (let i = 1; i <= maxItems; i++) {
         const title = (formData.get(`${section}_${i}_title`) as string)?.trim();
         const description = (formData.get(`${section}_${i}_description`) as string)?.trim();
         const value = (formData.get(`${section}_${i}_value`) as string)?.trim();
         const label = (formData.get(`${section}_${i}_label`) as string)?.trim();
         const icon = (formData.get(`${section}_${i}_icon`) as string)?.trim();
         
-        if (section === 'specifications' && (value || label)) {
-          items.push({ value: value || '', label: label || '' });
-        } else if ((section === 'features' || section === 'technical-benefits') && (title || description)) {
+        if (section === 'specifications') {
+          if (value || label || i <= 6) {
+            items.push({ value: value || '', label: label || '' });
+          }
+        } else if (section === 'features') {
+          // Always save all 6 features
+          items.push({ 
+            icon: icon || '', 
+            title: title || '', 
+            description: description || '' 
+          });
+        } else if (section === 'technical-benefits' && (title || description || icon)) {
           items.push({ 
             icon: icon || '', 
             title: title || '', 
@@ -72,6 +119,22 @@ export default function AdminProductsPage() {
     try {
       const { saveCMSData } = await import('../../../utils/cms');
       await saveCMSData('products', section, dataObj);
+      
+      // Dispatch custom event to update frontend immediately
+      window.dispatchEvent(
+        new CustomEvent('cmsUpdate', {
+          detail: { 
+            page: 'products', 
+            section: section
+          },
+        })
+      );
+      
+      // Refresh data
+      setTimeout(() => {
+        refreshData();
+      }, 500);
+      
       alert('Changes saved successfully!');
     } catch (error) {
       console.error('Error saving:', error);
@@ -183,13 +246,65 @@ export default function AdminProductsPage() {
                 {[1, 2, 3, 4, 5, 6].map((num) => {
                   const items = getFieldValue('features', 'items') || [];
                   const item = items[num - 1] || { icon: '', title: '', description: '' };
+                  const iconFieldName = `features_${num}_icon`;
+                  const currentIconUrl = iconUrls[iconFieldName] || item.icon || '';
+                  const isIconImage = currentIconUrl && (currentIconUrl.startsWith('http') || currentIconUrl.startsWith('/') || currentIconUrl.includes('.') && !currentIconUrl.startsWith('ri-'));
+                  
                   return (
                     <div key={num} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                       <h3 className="text-sm font-semibold text-gray-800 mb-3">Feature {num}</h3>
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Icon (RemixIcon class)</label>
-                          <input type="text" name={`features_${num}_icon`} defaultValue={item.icon} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent text-sm" placeholder="ri-settings-3-line" />
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Icon</label>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Upload Icon Image:</label>
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={(e) => handleImageUpload(e, iconFieldName)} 
+                                disabled={uploadingIcons[iconFieldName]}
+                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
+                              />
+                              {uploadingIcons[iconFieldName] && (
+                                <div className="mt-1 text-xs text-blue-600 flex items-center">
+                                  <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2"></div>
+                                  Uploading...
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Or enter Icon URL / RemixIcon class:</label>
+                              <input 
+                                type="text" 
+                                name={iconFieldName} 
+                                defaultValue={currentIconUrl} 
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent text-sm" 
+                                placeholder="https://example.com/icon.png or ri-settings-3-line" 
+                              />
+                            </div>
+                            {currentIconUrl && (
+                              <div className="mt-2">
+                                {isIconImage ? (
+                                  <div className="flex items-center gap-2">
+                                    <img 
+                                      src={currentIconUrl} 
+                                      alt={`Icon ${num}`} 
+                                      className="w-12 h-12 object-contain rounded border border-gray-200 bg-white p-1" 
+                                    />
+                                    <span className="text-xs text-gray-500">Icon Preview</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-12 h-12 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
+                                      <i className={`${currentIconUrl} text-[#8DC63F] text-2xl`}></i>
+                                    </div>
+                                    <span className="text-xs text-gray-500">RemixIcon Preview</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
@@ -261,13 +376,65 @@ export default function AdminProductsPage() {
                 {[1, 2, 3, 4, 5].map((num) => {
                   const items = getFieldValue('technical-benefits', 'items') || [];
                   const item = items[num - 1] || { icon: '', title: '', description: '' };
+                  const iconFieldName = `technical-benefits_${num}_icon`;
+                  const currentIconUrl = iconUrls[iconFieldName] || item.icon || '';
+                  const isIconImage = currentIconUrl && (currentIconUrl.startsWith('http') || currentIconUrl.startsWith('/') || currentIconUrl.includes('.') && !currentIconUrl.startsWith('ri-'));
+                  
                   return (
                     <div key={num} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                       <h3 className="text-sm font-semibold text-gray-800 mb-3">Benefit {num}</h3>
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Icon (RemixIcon class)</label>
-                          <input type="text" name={`technical-benefits_${num}_icon`} defaultValue={item.icon} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent text-sm" placeholder="ri-settings-3-line" />
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Icon</label>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Upload Icon Image:</label>
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={(e) => handleImageUpload(e, iconFieldName)} 
+                                disabled={uploadingIcons[iconFieldName]}
+                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
+                              />
+                              {uploadingIcons[iconFieldName] && (
+                                <div className="mt-1 text-xs text-blue-600 flex items-center">
+                                  <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2"></div>
+                                  Uploading...
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Or enter Icon URL / RemixIcon class:</label>
+                              <input 
+                                type="text" 
+                                name={iconFieldName} 
+                                defaultValue={currentIconUrl} 
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent text-sm" 
+                                placeholder="https://example.com/icon.png or ri-settings-3-line" 
+                              />
+                            </div>
+                            {currentIconUrl && (
+                              <div className="mt-2">
+                                {isIconImage ? (
+                                  <div className="flex items-center gap-2">
+                                    <img 
+                                      src={currentIconUrl} 
+                                      alt={`Icon ${num}`} 
+                                      className="w-12 h-12 object-contain rounded border border-gray-200 bg-white p-1" 
+                                    />
+                                    <span className="text-xs text-gray-500">Icon Preview</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-12 h-12 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
+                                      <i className={`${currentIconUrl} text-[#8DC63F] text-2xl`}></i>
+                                    </div>
+                                    <span className="text-xs text-gray-500">RemixIcon Preview</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>

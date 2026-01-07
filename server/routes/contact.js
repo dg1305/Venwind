@@ -66,7 +66,7 @@ router.post('/contact-form', [
       timestamp: new Date().toISOString()
     };
 
-    // Send email to info@refex.co.in
+    // Send email to contact@venwindrefex.com
     const emailResult = await emailService.sendContactFormEmail(formData);
 
     // Send auto-reply to customer (optional - you can remove this if not needed)

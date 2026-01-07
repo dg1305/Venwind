@@ -36,6 +36,8 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(100),
         unique: true,
         allowNull: false,
+        // Note: If you get "Too many keys" error, the unique constraint may already exist
+        // You can manually verify with: SHOW INDEXES FROM users;
       },
       first_name: DataTypes.STRING(85),
       last_name: DataTypes.STRING(85),

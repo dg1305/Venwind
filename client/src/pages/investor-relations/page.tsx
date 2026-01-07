@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Header from '../home/components/Header';
 import Footer from '../home/components/Footer';
+import HeroSection from './components/HeroSection';
 import SidebarNavigation from './components/SidebarNavigation';
 import ContentSection from './components/ContentSection';
 
@@ -11,30 +12,25 @@ export default function InvestorRelations() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <div className="pt-20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-16 py-12">
-          <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-12 text-center">
-            Investor Relations
-          </h1>
-          
-          <div className="grid lg:grid-cols-4 gap-8">
-            {/* Sidebar Navigation */}
-            <div className="lg:col-span-1">
-              <SidebarNavigation
-                activeSection={activeSection}
-                activeSubsection={activeSubsection}
-                onSectionChange={setActiveSection}
-                onSubsectionChange={setActiveSubsection}
-              />
-            </div>
+      <HeroSection />
+      <div className="max-w-7xl mx-auto px-6 lg:px-16 py-12">
+        <div className="grid lg:grid-cols-4 gap-8">
+          {/* Sidebar Navigation */}
+          <div className="lg:col-span-1">
+            <SidebarNavigation
+              activeSection={activeSection}
+              activeSubsection={activeSubsection}
+              onSectionChange={setActiveSection}
+              onSubsectionChange={setActiveSubsection}
+            />
+          </div>
 
-            {/* Content Area */}
-            <div className="lg:col-span-3">
-              <ContentSection
-                activeSection={activeSection}
-                activeSubsection={activeSubsection}
-              />
-            </div>
+          {/* Content Area */}
+          <div className="lg:col-span-3">
+            <ContentSection
+              activeSection={activeSection}
+              activeSubsection={activeSubsection}
+            />
           </div>
         </div>
       </div>

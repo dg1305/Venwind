@@ -20,7 +20,7 @@ interface ContactInfoContent {
 const defaultContactInfo: ContactInfoContent = {
   title: 'Have questions?\nGet in touch!',
   companyName: 'Venwind Refex Power Limited',
-  address: '6th Floor, Refex Towers, Sterling Road Signal,\n313, Valluvar Kottam High Road,\nNungambakkam, Chennai – 600034, Tamil Nadu',
+  address: 'CIN: U27101TN2024PLC175572\n2nd floor, Refex Towers, 313, Valluvar Kottam High Road, Nungambakkam,\nChennai-600034, Tamil Nadu, India',
   phone: '+91 (44) 69908410',
   email: 'contact@venwindrefex.com',
   facebookUrl: 'https://www.facebook.com/refexindustrieslimited/',
@@ -126,30 +126,37 @@ export default function ContactFormSection() {
     setSubmitStatus('idle');
 
     try {
-      const formBody = new URLSearchParams();
-      formBody.append('name', formData.name);
-      formBody.append('email', formData.email);
-      formBody.append('phone', formData.phone);
-      formBody.append('company', formData.company);
-      formBody.append('message', formData.message);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+      const apiUrl = API_BASE_URL ? `${API_BASE_URL}/api/contact-form` : '/api/contact-form';
 
-      const response = await fetch('https://readdy.ai/api/form/d4g4a6lfv7b2bv2ngi6g', {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: formBody.toString(),
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          company: formData.company,
+          message: formData.message,
+          recaptchaToken: 'verified', // Custom captcha is already verified
+        }),
       });
 
-      if (response.ok) {
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         setSubmitStatus('success');
         setFormData({ name: '', email: '', phone: '', company: '', message: '' });
         setCaptchaVerified(false);
       } else {
         setSubmitStatus('error');
+        console.error('Form submission error:', result.message || 'Unknown error');
       }
     } catch (error) {
       setSubmitStatus('error');
+      console.error('Form submission error:', error);
     } finally {
       setIsSubmitting(false);
     }

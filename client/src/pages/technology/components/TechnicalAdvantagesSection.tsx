@@ -17,15 +17,15 @@ interface TechnicalAdvantagesContent {
 }
 
 const defaultAdvantages: AdvantageItem[] = [
-  { title: 'Variable-Speed Variable-Pitch Control', content: 'Advanced control system that optimizes turbine performance by adjusting both rotor speed and blade pitch angle in real-time, maximizing energy capture across varying wind conditions while reducing mechanical stress and extending component lifetime.' },
-  { title: 'Permanent Magnet, Medium Speed Drive-Train Technology', content: 'Innovative drivetrain combining a medium-speed gearbox with a permanent magnet generator, eliminating the need for external excitation, reducing losses, and improving overall system efficiency while minimizing maintenance requirements.' },
-  { title: 'Adaptive Active Yaw System', content: 'Intelligent yaw control system that continuously adjusts the nacelle orientation to optimize wind capture and reduce loads, using advanced algorithms and real-time wind data to maximize energy production and minimize wear on components.' },
-  { title: 'Full-Power Converter', content: 'State-of-the-art power electronics that convert 100% of generated power, providing superior grid support capabilities, excellent power quality, and enabling advanced grid services such as voltage and frequency regulation.' },
-  { title: 'Comprehensive Load and Strength Calculation', content: 'Rigorous engineering analysis using advanced simulation tools to ensure structural integrity and optimal performance under all operating conditions, including extreme weather events and grid disturbances.' },
-  { title: 'Capacitance Detection Technology:', content: 'Advanced monitoring system that detects and prevents potential electrical issues before they occur, enhancing safety and reliability while reducing unplanned downtime and maintenance costs.' },
-  { title: 'Modular Structural Design', content: 'Flexible architecture that allows for easy upgrades, modifications, and maintenance, reducing installation time and costs while enabling future technology integration and capacity enhancements.' },
-  { title: 'Quality Control and Factory Inspection System', content: 'Comprehensive quality assurance program with rigorous testing and inspection protocols at every stage of manufacturing, ensuring the highest standards of reliability and performance for every turbine.' },
-  { title: 'Monitoring Systems', content: 'Advanced SCADA and condition monitoring systems that provide real-time performance data, predictive maintenance alerts, and comprehensive analytics to optimize operations and maximize uptime across the entire wind farm.' },
+  { title: 'Variable-Speed Variable-Pitch Control', content: 'Adaptable to random changes in wind, optimizing power output.' },
+  { title: 'Permanent Magnet, Medium Speed Drive-Train Technology', content: 'Higher wind energy utilization, minimal energy loss and less maintenance (low speed). Optimized technology giving advantages of both permanent magnet generator and low-speed drive train. Active air-cooling system for generator and drive-train ensures high performance and reliability.' },
+  { title: 'Adaptive Active Yaw System', content: 'Automatically corrects wind vane orientation for improved wind alignment accuracy.' },
+  { title: 'Full-Power Converter', content: 'Outstanding fault ride through capability and grid friendliness (AC-DC-AC conversion). Full power converter is cooled by active liquid cooling system, effectively improving the cooling efficiency.' },
+  { title: 'Comprehensive Load and Strength Calculation', content: 'Redundancy design for high reliability.' },
+  { title: 'Capacitance Detection Technology', content: 'Regularly detects ultra capacitors of the pitch system, reducing risk to the wind turbine.' },
+  { title: 'Modular Structural Design', content: 'Enables flexible installation and construction.' },
+  { title: 'Quality Control and Factory Inspection System', content: 'Facilitates easy commissioning and stable operation.' },
+  { title: 'Monitoring Systems', content: 'Central, remote, and online monitoring systems for efficient operation and maintenance.' },
 ];
 
 export default function TechnicalAdvantagesSection() {
@@ -93,26 +93,7 @@ export default function TechnicalAdvantagesSection() {
     setOpenIndex(openIndex === index ? null : index);
   };
 
-  useEffect(() => {
-    const matchHeight = () => {
-      if (contentRef.current && imageContainerRef.current) {
-        const contentHeight = contentRef.current.offsetHeight;
-        const imageImg = imageContainerRef.current.querySelector('img');
-        if (imageImg) {
-          imageContainerRef.current.style.height = `${contentHeight}px`;
-          imageImg.style.height = `${contentHeight}px`;
-        }
-      }
-    };
 
-    // Match height initially and after content changes
-    matchHeight();
-    
-    // Also match height when accordion opens/closes
-    const timer = setTimeout(matchHeight, 100);
-    
-    return () => clearTimeout(timer);
-  }, [openIndex, content, loading]);
 
   if (loading) {
     return (
@@ -129,71 +110,59 @@ export default function TechnicalAdvantagesSection() {
   const advantages = content.items || defaultAdvantages;
 
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-16">
-        <div className="grid lg:grid-cols-2 gap-0 items-start">
-          {content.imageUrl && (
-            <div ref={imageContainerRef} className="hidden lg:block pr-0" data-aos="fade-right">
-              <img 
-                src={normalizeImageUrl(content.imageUrl)}
-                alt="Wind turbine technical advantages"
-                className="w-full object-cover rounded-l-lg rounded-r-none"
-                style={{ objectPosition: 'top' }}
-              />
-            </div>
-          )}
-          
-          <div ref={contentRef} className="pl-8">
-            <div className="mb-8" data-aos="fade-up">
-              <h2 className="text-gray-900 text-4xl lg:text-5xl font-bold">
-                {content.title ? (
-                  content.title.split(' ').map((word, index, arr) => (
-                    <span key={index}>
-                      {word}
-                      {index < arr.length - 1 && <br />}
-                    </span>
-                  ))
-                ) : (
-                  <>
-                    Technical<br />Advantages
-                  </>
-                )}
-              </h2>
-            </div>
-            <div className="space-y-4">
-            {advantages.map((advantage, index) => (
-              <div 
-                key={index}
-                className="bg-white border border-gray-200 overflow-hidden"
-                data-aos="fade-up"
-                data-aos-delay={index * 100}
-              >
-                <button
-                  onClick={() => toggleAccordion(index)}
-                  className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  <h3 className="text-gray-900 text-xl font-bold text-left whitespace-nowrap">{advantage.title}</h3>
-                  <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 ml-4">
-                    <i className={`ri-${openIndex === index ? 'subtract' : 'add'}-line text-2xl transition-transform duration-300`} style={{ color: '#8DC63F' }}></i>
-                  </div>
-                </button>
-                
-                <div 
-                  className={`overflow-hidden transition-all duration-300 ${
-                    openIndex === index ? 'max-h-96' : 'max-h-0'
-                  }`}
-                >
-                  <div className="px-8 pb-6">
-                    <p className="text-gray-700 text-base leading-relaxed">
-                      {advantage.content}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-            </div>
+    <section className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center py-28">
+      {/* Image Left */}
+      {content.imageUrl && (
+        <div ref={imageContainerRef} className="col-span-12 lg:col-span-6 hidden lg:block p-0" data-aos="fade-right">
+          <div className="w-full overflow-hidden">
+            <img 
+              src={normalizeImageUrl(content.imageUrl)}
+              alt="Wind turbine technical advantages"
+              className="w-full h-auto object-contain max-h-[680px]"
+            />
           </div>
         </div>
+      )}
+      
+      {/* Content Right */}
+      <div ref={contentRef} className={`${content.imageUrl ? 'col-span-12 lg:col-span-6' : 'col-span-12'} pt-20`}>
+        <div className="mb-6" data-aos="fade-left">
+          <h2 className="text-gray-900 text-3xl font-semibold mb-6">
+            {content.title || 'Technical Advantages'}
+          </h2>
+        </div>
+        <ul className="space-y-2">
+          {advantages.map((advantage, index) => (
+            <li key={index} className="bg-white overflow-hidden" data-aos="fade-left" data-aos-delay={index * 50}>
+              <button
+                onClick={() => toggleAccordion(index)}
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#8DC63F]/10 transition-colors cursor-pointer group border-b border-gray-200"
+              >
+                <h3 
+                  className="text-gray-900 text-lg font-semibold text-left transition-colors group-hover:text-[#8DC63F]"
+                  style={{ color: openIndex === index ? '#8DC63F' : undefined }}
+                >
+                  {advantage.title}
+                </h3>
+                <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 ml-4">
+                  <i className={`ri-${openIndex === index ? 'subtract' : 'add'}-line text-2xl transition-transform duration-300`} style={{ color: '#8DC63F' }}></i>
+                </div>
+              </button>
+              
+              <div 
+                className={`overflow-hidden transition-all duration-300 ${
+                  openIndex === index ? 'max-h-[500px]' : 'max-h-0'
+                }`}
+              >
+                <div className="px-4 pb-3">
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    {advantage.content}
+                  </p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

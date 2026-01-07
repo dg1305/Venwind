@@ -29,15 +29,7 @@ export default function ComparisonSection() {
     title: 'Technology Comparison',
     rows: defaultRows,
   });
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    AOS.init({
-      duration: 1000,
-      once: true,
-      easing: 'ease-out',
-    });
-
     const fetchContent = async () => {
       try {
         const result = await getCMSData('technology', 'comparison', {
@@ -49,8 +41,6 @@ export default function ComparisonSection() {
         });
       } catch (error) {
         console.error('Error loading comparison content:', error);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -67,18 +57,6 @@ export default function ComparisonSection() {
       window.removeEventListener('cmsUpdate', handleCmsUpdate as EventListener);
     };
   }, []);
-
-  if (loading) {
-    return (
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6 lg:px-16">
-          <div className="flex items-center justify-center">
-            <div className="w-16 h-16 border-4 border-[#8DC63F] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   const rows = content.rows || defaultRows;
 
@@ -100,7 +78,7 @@ export default function ComparisonSection() {
             </thead>
             <tbody className="text-gray-700">
               {rows.map((row, index) => (
-                <tr key={index} className={index % 2 === 0 ? 'border-b border-gray-200' : 'border-b border-gray-200 bg-gray-50'}>
+                <tr key={index} className={`border-b border-gray-200 ${index % 2 === 1 ? 'bg-blue-50' : ''}`}>
                   <td className="px-6 py-4 font-semibold">{row.aspect}</td>
                   <td className="px-6 py-4">{row.vensys}</td>
                   <td className="px-6 py-4">{row.dfig}</td>

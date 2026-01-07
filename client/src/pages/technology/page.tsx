@@ -20,7 +20,9 @@ export default function Technology() {
       <TechnicalAdvantagesSection />
       <AdvantagesSection />
       <BenefitsSection />
-      <Footer />
+      <div className="pt-24 pb-8">
+        <Footer />
+      </div>
     </div>
   );
 }

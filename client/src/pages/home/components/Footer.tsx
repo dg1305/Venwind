@@ -88,8 +88,8 @@ export default function Footer() {
               ) : (
                 <>
                   <strong>Venwind Refex Power Limited</strong><br />
-                  CIN: U27101TN2024PLC175572<br />
-                  2<sup>nd</sup> floor, Refex Towers, 313, Valluvar Kottam High, Nungambakkam,<br />
+                  <span className="whitespace-nowrap">CIN: U27101TN2024PLC175572</span><br />
+                  2<sup>nd</sup> floor, Refex Towers, 313, Valluvar Kottam High Road, Nungambakkam,<br />
                   Chennai-600034, Tamil Nadu, India
                 </>
               )}
@@ -245,13 +245,13 @@ export default function Footer() {
                     href="tel:+914435040050" 
                     className="text-gray-300 text-sm hover:text-[#8DC63F] transition-colors"
                   >
-                    044 - 3504 0050
+                    +91 044 - 3504 0050
                   </a>
                   <a 
                     href="tel:+914469908410" 
                     className="text-gray-300 text-sm hover:text-[#8DC63F] transition-colors"
                   >
-                    044- 6990 8410
+                    +91 044 - 6990 8410
                   </a>
                 </div>
               </div>

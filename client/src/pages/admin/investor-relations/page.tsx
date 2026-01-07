@@ -4,9 +4,10 @@ import AdminLayout, { API_BASE_URL } from '../components/AdminLayout';
 import { useCMSData } from '../hooks/useCMSData';
 
 export default function AdminInvestorRelationsPage() {
-  const [activeSection, setActiveSection] = useState('annual-return');
+  const [activeSection, setActiveSection] = useState('hero');
   const [activeSubsection, setActiveSubsection] = useState('fy-2024-25');
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, boolean>>({});
+  const [heroImageUrl, setHeroImageUrl] = useState<string>('');
   const [formData, setFormData] = useState<{
     title: string;
     content: string;
@@ -17,6 +18,99 @@ export default function AdminInvestorRelationsPage() {
     documents: [],
   });
   const { getFieldValue, loading, refreshData } = useCMSData('investor-relations');
+
+  useEffect(() => {
+    if (!loading) {
+      const heroData = getFieldValue('hero');
+      if (heroData?.bgImageUrl) {
+        setHeroImageUrl(heroData.bgImageUrl);
+      }
+    }
+  }, [loading, getFieldValue]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      // Use relative path if API_BASE_URL is empty (works with Vite proxy)
+      const uploadUrl = API_BASE_URL ? `${API_BASE_URL}/api/upload/image` : '/api/upload/image';
+      
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.imageUrl) {
+          // Construct full URL - if API_BASE_URL is empty, use relative path
+          const fullUrl = API_BASE_URL 
+            ? `${API_BASE_URL}${result.imageUrl}` 
+            : result.imageUrl;
+          
+          const input = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
+          if (input) {
+            input.value = fullUrl;
+            // Update state for immediate preview
+            if (fieldName === 'bgImageUrl') {
+              setHeroImageUrl(fullUrl);
+            }
+            // Trigger change event
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          alert('Image uploaded successfully! Click "Save Changes" to save.');
+        } else {
+          alert('Failed to upload image: ' + (result.error || 'Unknown error'));
+        }
+      } else {
+        const errorText = await response.text();
+        alert('Failed to upload image. Please try again.');
+        console.error('Upload error:', errorText);
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleHeroSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const dataObj: any = {};
+    formData.forEach((value, key) => {
+      if (typeof value === 'string') {
+        dataObj[key] = value.trim();
+      }
+    });
+    
+    try {
+      const { saveCMSData } = await import('../../../utils/cms');
+      await saveCMSData('investor-relations', 'hero', dataObj);
+      window.dispatchEvent(
+        new CustomEvent('cmsUpdate', {
+          detail: { 
+            page: 'investor-relations', 
+            section: 'hero'
+          },
+        })
+      );
+      setTimeout(() => {
+        refreshData();
+      }, 500);
+      alert('Changes saved successfully!');
+    } catch (error) {
+      console.error('Error saving:', error);
+      alert('Failed to save changes.');
+    }
+  };
 
   const sections = [
     {
@@ -92,7 +186,7 @@ export default function AdminInvestorRelationsPage() {
             };
             return { ...prev, documents: newDocuments };
           });
-          alert('File uploaded successfully! The URL has been set. Click "Save Changes" to save it.');
+          alert('File uploaded successfully! Click "Save Changes" to save the document.');
         } else {
           throw new Error(result.error || 'Upload failed');
         }
@@ -162,8 +256,8 @@ export default function AdminInvestorRelationsPage() {
 
   const currentSection = sections.find(s => s.id === activeSection);
   const currentSubsection = currentSection?.subsections.find(s => s.id === activeSubsection);
-  const sectionKey = `${activeSection}_${activeSubsection}`;
-  const sectionData = getFieldValue(sectionKey);
+  const sectionKey = activeSection !== 'hero' ? `${activeSection}_${activeSubsection}` : '';
+  const sectionData = sectionKey ? getFieldValue(sectionKey) : null;
   const currentContent = sectionData ? {
     title: sectionData.title || '',
     content: sectionData.content || '',
@@ -172,7 +266,8 @@ export default function AdminInvestorRelationsPage() {
 
   // Update form data ONLY when section/subsection changes, not during refresh
   useEffect(() => {
-    if (!loading) {
+    if (!loading && activeSection !== 'hero') {
+      const sectionKey = `${activeSection}_${activeSubsection}`;
       const sectionData = getFieldValue(sectionKey);
       if (sectionData) {
         setFormData({
@@ -222,8 +317,68 @@ export default function AdminInvestorRelationsPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Investor Relations CMS</h1>
           
+          {/* Section Selector */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Manage</label>
+            <select
+              value={activeSection}
+              onChange={(e) => {
+                setActiveSection(e.target.value);
+                if (e.target.value !== 'hero') {
+                  const section = sections.find(s => s.id === e.target.value);
+                  if (section && section.subsections.length > 0) {
+                    setActiveSubsection(section.subsections[0].id);
+                  }
+                }
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+            >
+              <option value="hero">Hero Section</option>
+              {sections.map((section) => (
+                <option key={section.id} value={section.id}>
+                  {section.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Hero Section */}
+          {activeSection === 'hero' && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Hero Section</h2>
+              <form onSubmit={handleHeroSubmit}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                    <input type="text" name="title" defaultValue={getFieldValue('hero', 'title')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Investor Relations" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Background Image</label>
+                    <div className="mt-2 mb-2">
+                      <label className="block text-xs text-gray-600 mb-1">Upload Image:</label>
+                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'bgImageUrl')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                    </div>
+                    <div className="mt-2">
+                      <label className="block text-xs text-gray-600 mb-1">Or enter Image URL:</label>
+                      <input type="url" name="bgImageUrl" defaultValue={getFieldValue('hero', 'bgImageUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/hero-bg.jpg" />
+                    </div>
+                    {(heroImageUrl || getFieldValue('hero', 'bgImageUrl')) && (
+                      <div className="mt-2">
+                        <img src={heroImageUrl || getFieldValue('hero', 'bgImageUrl')} alt="Preview" className="w-full h-32 object-cover rounded-lg border border-gray-200" />
+                      </div>
+                    )}
+                  </div>
+                  <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors">
+                    <i className="ri-save-line mr-2"></i>Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
           {/* Section and Subsection Selector */}
-          <div className="mb-6 space-y-4">
+          {activeSection !== 'hero' && (
+            <div className="mb-6 space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
               <select
@@ -260,8 +415,10 @@ export default function AdminInvestorRelationsPage() {
               </select>
             </div>
           </div>
+          )}
 
           {/* Content Form */}
+          {activeSection !== 'hero' && (
           <form onSubmit={handleSubmit}>
             <div className="space-y-6">
               <div>
@@ -317,35 +474,8 @@ export default function AdminInvestorRelationsPage() {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Document URL</label>
-                            <div className="flex gap-2">
-                              <input
-                                type="url"
-                                name={`doc_${num}_url`}
-                                value={doc.url}
-                                onChange={(e) => {
-                                  const newDocuments = [...formData.documents];
-                                  if (!newDocuments[num - 1]) {
-                                    newDocuments[num - 1] = { name: '', url: '', description: '' };
-                                  }
-                                  newDocuments[num - 1] = { ...newDocuments[num - 1], url: e.target.value };
-                                  setFormData(prev => ({ ...prev, documents: newDocuments }));
-                                }}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent text-sm"
-                                placeholder="https://example.com/document.pdf"
-                              />
-                              {doc.url && (
-                                <a
-                                  href={doc.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
-                                >
-                                  <i className="ri-external-link-line mr-1"></i>View
-                                </a>
-                              )}
-                            </div>
-                            <div className="mt-2">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Upload Document</label>
+                            <div>
                               <input
                                 type="file"
                                 accept=".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -361,9 +491,29 @@ export default function AdminInvestorRelationsPage() {
                               )}
                             </div>
                             {doc.url && (
-                              <p className="mt-1 text-xs text-gray-500">
-                                <i className="ri-file-line mr-1"></i>File uploaded: {doc.url.split('/').pop()}
-                              </p>
+                              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <i className="ri-file-check-line text-green-600 text-lg"></i>
+                                    <div>
+                                      <p className="text-xs font-medium text-green-900">
+                                        File uploaded successfully
+                                      </p>
+                                      <p className="text-xs text-green-700">
+                                        {doc.url.split('/').pop()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <a
+                                    href={doc.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs whitespace-nowrap"
+                                  >
+                                    <i className="ri-external-link-line mr-1"></i>View
+                                  </a>
+                                </div>
+                              </div>
                             )}
                           </div>
                           <div>
@@ -399,9 +549,11 @@ export default function AdminInvestorRelationsPage() {
               </button>
             </div>
           </form>
+          )}
         </div>
       </div>
     </AdminLayout>
   );
 }
+
 

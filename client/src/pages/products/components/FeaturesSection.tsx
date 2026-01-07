@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import { getCMSData } from '../../../utils/cms';
+import { getCMSData, normalizeImageUrl } from '../../../utils/cms';
 
 interface FeatureItem {
   icon: string;
@@ -16,11 +16,11 @@ interface FeaturesContent {
 
 const defaultFeatures: FeatureItem[] = [
   { icon: 'ri-settings-3-line', title: 'Core Efficiency', description: 'MSPM drive train with a permanent magnet generator minimizes energy loss and maximizes output.' },
-  { icon: 'ri-flashlight-line', title: 'High Power Output', description: '182m rotor diameter.' },
-  { icon: 'ri-cpu-line', title: 'Grid-Friendly', description: 'Full-power converter (AC-DC-AC) ensures smooth grid integration with LVRT and HVRT compatibility.' },
+  { icon: 'ri-thunderstorms-line', title: 'High Power Output', description: '182m rotor diameter.' },
+  { icon: 'ri-plug-line', title: 'Grid-Friendly', description: 'Full-power converter (AC-DC-AC) ensures smooth grid integration with LVRT and HVRT compatibility.' },
   { icon: 'ri-tools-line', title: 'Low Maintenance', description: 'Medium-speed gearbox reduces wear, cutting costs and extending lifespan.' },
-  { icon: 'ri-settings-2-line', title: 'Superior Performance', description: 'Starts power generation at 2.5 m/s cut-in wind speed.' },
-  { icon: 'ri-shape-line', title: 'Adaptable Design', description: 'Modular structure supports future upgrades and scalability.' },
+  { icon: 'ri-speed-line', title: 'Superior Performance', description: 'Starts power generation at 2.5 m/s cut-in wind speed.' },
+  { icon: 'ri-stack-line', title: 'Adaptable Design', description: 'Modular structure supports future upgrades and scalability.' },
 ];
 
 export default function FeaturesSection() {
@@ -42,12 +42,32 @@ export default function FeaturesSection() {
         const result = await getCMSData('products', 'features', {
           defaultValue: { title: 'Why choose the GWH182-5.3MW wind turbine?', items: defaultFeatures },
         });
+        
+        // Merge CMS items with defaults - use default icon if CMS icon is empty
+        let mergedItems = defaultFeatures;
+        if (result.data.items && result.data.items.length > 0) {
+          mergedItems = result.data.items.map((item: FeatureItem, index: number) => ({
+            ...item,
+            icon: item.icon && item.icon.trim() ? item.icon.trim() : (defaultFeatures[index]?.icon || 'ri-settings-3-line'),
+            title: item.title && item.title.trim() ? item.title.trim() : (defaultFeatures[index]?.title || ''),
+            description: item.description && item.description.trim() ? item.description.trim() : (defaultFeatures[index]?.description || ''),
+          }));
+          // Ensure we have exactly 6 items
+          while (mergedItems.length < 6) {
+            mergedItems.push(defaultFeatures[mergedItems.length] || defaultFeatures[0]);
+          }
+        }
+        
         setContent({
           title: result.data.title || 'Why choose the GWH182-5.3MW wind turbine?',
-          items: (result.data.items && result.data.items.length > 0) ? result.data.items : defaultFeatures,
+          items: mergedItems,
         });
       } catch (error) {
         console.error('Error loading features content:', error);
+        setContent({
+          title: 'Why choose the GWH182-5.3MW wind turbine?',
+          items: defaultFeatures,
+        });
       } finally {
         setLoading(false);
       }
@@ -96,8 +116,29 @@ export default function FeaturesSection() {
               data-aos="fade-up"
             >
               <div className="flex justify-center mb-6">
-                <div className="w-24 h-24 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
-                  <i className={`${feature.icon} text-[#8DC63F] text-5xl`}></i>
+                <div className="w-24 h-24 rounded-full bg-[#8DC63F]/10 flex items-center justify-center hover:bg-[#8DC63F] hover:scale-110 transition-all duration-300 cursor-pointer group">
+                  {feature.icon && feature.icon.trim() && (feature.icon.startsWith('http') || feature.icon.startsWith('/') || (feature.icon.includes('.') && !feature.icon.startsWith('ri-'))) ? (
+                    <img 
+                      src={normalizeImageUrl(feature.icon)} 
+                      alt={feature.title}
+                      className="w-16 h-16 object-contain group-hover:scale-110 transition-transform duration-300"
+                      onError={(e) => {
+                        // Fallback to RemixIcon if image fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const iconIndex = defaultFeatures.findIndex(f => f.title === feature.title);
+                          const fallbackIcon = iconIndex >= 0 ? defaultFeatures[iconIndex].icon : 'ri-settings-3-line';
+                          const iconElement = document.createElement('i');
+                          iconElement.className = `${fallbackIcon} text-[#8DC63F] text-5xl group-hover:text-white group-hover:rotate-12 transition-all duration-300`;
+                          parent.appendChild(iconElement);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <i className={`${feature.icon || defaultFeatures[index]?.icon || 'ri-settings-3-line'} text-[#8DC63F] text-5xl group-hover:text-white group-hover:rotate-12 transition-all duration-300`}></i>
+                  )}
                 </div>
               </div>
               <h4 className="text-gray-900 text-xl font-bold mb-4">{feature.title}</h4>
@@ -107,21 +148,45 @@ export default function FeaturesSection() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          {features.slice(3).map((feature, index) => (
-            <div 
-              key={index} 
-              className="text-center"
-              data-aos="fade-up"
-            >
-              <div className="flex justify-center mb-6">
-                <div className="w-24 h-24 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
-                  <i className={`${feature.icon} text-[#8DC63F] text-5xl`}></i>
+          {features.slice(3).map((feature, idx) => {
+            const index = idx + 3;
+            return (
+              <div 
+                key={index} 
+                className="text-center"
+                data-aos="fade-up"
+              >
+                <div className="flex justify-center mb-6">
+                  <div className="w-24 h-24 rounded-full bg-[#8DC63F]/10 flex items-center justify-center hover:bg-[#8DC63F] hover:scale-110 transition-all duration-300 cursor-pointer group">
+                    {feature.icon && feature.icon.trim() && (feature.icon.startsWith('http') || feature.icon.startsWith('/') || (feature.icon.includes('.') && !feature.icon.startsWith('ri-'))) ? (
+                      <img 
+                        src={normalizeImageUrl(feature.icon)} 
+                        alt={feature.title}
+                        className="w-16 h-16 object-contain group-hover:scale-110 transition-transform duration-300"
+                        onError={(e) => {
+                          // Fallback to RemixIcon if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            const iconIndex = defaultFeatures.findIndex(f => f.title === feature.title);
+                            const fallbackIcon = iconIndex >= 0 ? defaultFeatures[iconIndex].icon : 'ri-settings-3-line';
+                            const iconElement = document.createElement('i');
+                            iconElement.className = `${fallbackIcon} text-[#8DC63F] text-5xl group-hover:text-white group-hover:rotate-12 transition-all duration-300`;
+                            parent.appendChild(iconElement);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <i className={`${feature.icon || defaultFeatures[index]?.icon || 'ri-settings-3-line'} text-[#8DC63F] text-5xl group-hover:text-white group-hover:rotate-12 transition-all duration-300`}></i>
+                    )}
+                  </div>
                 </div>
+                <h4 className="text-gray-900 text-xl font-bold mb-4">{feature.title}</h4>
+                <p className="text-gray-700 text-base leading-relaxed">{feature.description}</p>
               </div>
-              <h4 className="text-gray-900 text-xl font-bold mb-4">{feature.title}</h4>
-              <p className="text-gray-700 text-base leading-relaxed">{feature.description}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { getCMSData, normalizeImageUrl } from '../../../utils/cms';
@@ -35,6 +35,8 @@ export default function AdvantagesSection() {
     items: defaultAdvantages,
   });
   const [loading, setLoading] = useState(true);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     AOS.init({
@@ -74,6 +76,7 @@ export default function AdvantagesSection() {
     };
   }, []);
 
+
   if (loading) {
     return (
       <section className="py-20 bg-white">
@@ -89,58 +92,54 @@ export default function AdvantagesSection() {
   const advantages = content.items || defaultAdvantages;
 
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-          <div data-aos="fade-right" className="pr-8">
-            <h2 className="text-gray-900 text-4xl lg:text-5xl font-bold mb-8">
-              {content.title || 'Advantages over Competitors'}
-            </h2>
-            
-            <div className="space-y-4">
-              {advantages.map((advantage, index) => (
-                <div key={index} className="border-b border-gray-200">
-                  <button
-                    onClick={() => setOpenIndex(openIndex === index ? -1 : index)}
-                    className="w-full flex items-center justify-between py-4 text-left transition-colors cursor-pointer"
-                    style={{ color: openIndex === index ? '#8DC63F' : '#111827' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#8DC63F'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = openIndex === index ? '#8DC63F' : '#111827'}
-                  >
-                    <span className="text-lg font-semibold pr-4">
-                      {advantage.title}
-                    </span>
-                    <i className={`${openIndex === index ? 'ri-subtract-line' : 'ri-add-line'} text-2xl text-gray-600 flex-shrink-0`}></i>
-                  </button>
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ${
-                      openIndex === index ? 'max-h-96 pb-4' : 'max-h-0'
-                    }`}
-                  >
-                    <div className="text-gray-700 text-base leading-relaxed">
-                      {typeof advantage.content === 'string' ? advantage.content : advantage.content}
-                    </div>
-                  </div>
+    <section className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center py-28">
+      {/* Content Left */}
+      <div ref={contentRef} className={`${content.imageUrl ? 'col-span-12 lg:col-span-6' : 'col-span-12'} pt-24`} data-aos="fade-right">
+        <h2 className="text-gray-900 text-3xl font-semibold mb-6">
+          {content.title || 'Advantages over Competitors'}
+        </h2>
+        
+        <ul className="space-y-2">
+          {advantages.map((advantage, index) => (
+            <li key={index} className="border-b border-gray-200">
+              <button
+                onClick={() => setOpenIndex(openIndex === index ? -1 : index)}
+                className="w-full flex items-center justify-between py-3 text-left transition-colors cursor-pointer"
+                style={{ color: openIndex === index ? '#8DC63F' : '#111827' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#8DC63F'}
+                onMouseLeave={(e) => e.currentTarget.style.color = openIndex === index ? '#8DC63F' : '#111827'}
+              >
+                <span className="text-base font-semibold pr-4">
+                  {advantage.title}
+                </span>
+                <i className={`${openIndex === index ? 'ri-subtract-line' : 'ri-add-line'} text-2xl text-gray-600 flex-shrink-0`}></i>
+              </button>
+              <div
+                className={`overflow-hidden transition-all duration-300 ${
+                  openIndex === index ? 'max-h-96 pb-4' : 'max-h-0'
+                }`}
+              >
+                <div className="text-gray-700 text-sm leading-relaxed">
+                  {typeof advantage.content === 'string' ? advantage.content : advantage.content}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {content.imageUrl && (
-            <div data-aos="fade-left" className="hidden lg:block pl-0">
-              <div className="relative w-full rounded-r-lg rounded-l-none overflow-hidden">
-                <img
-                  src={normalizeImageUrl(content.imageUrl)}
-                  alt="Wind Turbine Advantages"
-                  className="w-full object-cover rounded-r-lg rounded-l-none"
-                  style={{ maxHeight: '600px', height: 'auto' }}
-                />
-                <div className="absolute inset-0 bg-black/40 rounded-r-lg rounded-l-none"></div>
               </div>
-            </div>
-          )}
-        </div>
+            </li>
+          ))}
+        </ul>
       </div>
+
+      {/* Image Right */}
+      {content.imageUrl && (
+        <div ref={imageContainerRef} className="col-span-12 lg:col-span-6 hidden lg:block p-0" data-aos="fade-left">
+          <div className="w-full overflow-hidden">
+            <img
+              src={normalizeImageUrl(content.imageUrl)}
+              alt="Wind Turbine Advantages"
+              className="w-full h-auto object-contain max-h-[680px]"
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { getCMSData, normalizeImageUrl } from '../../../utils/cms';
@@ -34,6 +34,8 @@ export default function BenefitsSection() {
     items: defaultBenefits,
   });
   const [loading, setLoading] = useState(true);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     AOS.init({
@@ -73,6 +75,7 @@ export default function BenefitsSection() {
     };
   }, []);
 
+
   if (loading) {
     return (
       <section className="py-20 bg-gray-50">
@@ -88,55 +91,53 @@ export default function BenefitsSection() {
   const benefits = content.items || defaultBenefits;
 
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-6 lg:px-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-stretch">
-          {content.imageUrl && (
-            <div data-aos="fade-right" className="hidden lg:block h-full">
-              <div className="h-full flex items-center">
-                <img
-                  src={normalizeImageUrl(content.imageUrl)}
-                  alt="Wind Turbine Benefits"
-                  className="w-full h-full max-h-[600px] object-cover rounded-lg"
-                />
-              </div>
-            </div>
-          )}
-
-          <div data-aos="fade-left" className="flex flex-col justify-center">
-            <h2 className="text-gray-900 text-4xl lg:text-5xl font-bold mb-8">
-              {content.title || 'Other Benefits'}
-            </h2>
-            
-            <div className="space-y-4">
-              {benefits.map((benefit, index) => (
-                <div key={index} className="border-b border-gray-200">
-                  <button
-                    onClick={() => setOpenIndex(openIndex === index ? -1 : index)}
-                    className="w-full flex items-center justify-between py-4 text-left transition-colors cursor-pointer"
-                    style={{ color: openIndex === index ? '#8DC63F' : '#111827' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#8DC63F'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = openIndex === index ? '#8DC63F' : '#111827'}
-                  >
-                    <span className="text-lg font-semibold pr-4">
-                      {benefit.title}
-                    </span>
-                    <i className={`${openIndex === index ? 'ri-subtract-line' : 'ri-add-line'} text-2xl text-gray-600 flex-shrink-0`}></i>
-                  </button>
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ${
-                      openIndex === index ? 'max-h-96 pb-4' : 'max-h-0'
-                    }`}
-                  >
-                    <div className="text-gray-700 text-base leading-relaxed">
-                      {typeof benefit.content === 'string' ? benefit.content : benefit.content}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+    <section className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center py-28">
+      {/* Image Left */}
+      {content.imageUrl && (
+        <div ref={imageContainerRef} className="col-span-12 lg:col-span-6 hidden lg:block p-0" data-aos="fade-right">
+          <div className="w-full overflow-hidden">
+            <img
+              src={normalizeImageUrl(content.imageUrl)}
+              alt="Wind Turbine Benefits"
+              className="w-full h-auto object-contain max-h-[680px]"
+            />
           </div>
         </div>
+      )}
+
+      {/* Content Right */}
+      <div ref={contentRef} className={`${content.imageUrl ? 'col-span-12 lg:col-span-6' : 'col-span-12'} pt-20`} data-aos="fade-left">
+        <h2 className="text-gray-900 text-3xl font-semibold mb-6">
+          {content.title || 'Other Benefits'}
+        </h2>
+        
+        <ul className="space-y-2">
+          {benefits.map((benefit, index) => (
+            <li key={index} className="border-b border-gray-200">
+              <button
+                onClick={() => setOpenIndex(openIndex === index ? -1 : index)}
+                className="w-full flex items-center justify-between py-3 text-left transition-colors cursor-pointer"
+                style={{ color: openIndex === index ? '#8DC63F' : '#111827' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#8DC63F'}
+                onMouseLeave={(e) => e.currentTarget.style.color = openIndex === index ? '#8DC63F' : '#111827'}
+              >
+                <span className="text-base font-semibold pr-4">
+                  {benefit.title}
+                </span>
+                <i className={`${openIndex === index ? 'ri-subtract-line' : 'ri-add-line'} text-2xl text-gray-600 flex-shrink-0`}></i>
+              </button>
+              <div
+                className={`overflow-hidden transition-all duration-300 ${
+                  openIndex === index ? 'max-h-96 pb-3' : 'max-h-0'
+                }`}
+              >
+                <div className="text-gray-700 text-sm leading-relaxed">
+                  {typeof benefit.content === 'string' ? benefit.content : benefit.content}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

@@ -10,7 +10,7 @@ interface HeroContent {
 
 export default function HeroSection() {
   const [heroContent, setHeroContent] = useState<HeroContent>({
-    title: 'About Us',
+    title: 'Investor Relations',
   });
   const [loading, setLoading] = useState(true);
 
@@ -23,8 +23,8 @@ export default function HeroSection() {
 
     const fetchContent = async () => {
       try {
-        const result = await getCMSData('about', 'hero', {
-          defaultValue: { title: 'About Us' },
+        const result = await getCMSData('investor-relations', 'hero', {
+          defaultValue: { title: 'Investor Relations' },
         });
         setHeroContent(result.data);
       } catch (error) {
@@ -36,9 +36,8 @@ export default function HeroSection() {
 
     fetchContent();
 
-    // Listen for CMS updates
     const handleCmsUpdate = (e: CustomEvent) => {
-      if (e.detail.page === 'about' && e.detail.section === 'hero') {
+      if (e.detail.page === 'investor-relations' && e.detail.section === 'hero') {
         fetchContent();
       }
     };
@@ -59,17 +58,22 @@ export default function HeroSection() {
 
   return (
     <section 
-        className="relative h-[350px] w-full overflow-hidden bg-cover bg-center"
-        style={{
-          backgroundImage: heroContent.bgImageUrl 
-            ? `url(${heroContent.bgImageUrl})` 
-            : 'url(https://venwindrefex.com/wp-content/uploads/2025/01/about-us-banner.jpg)',
-        }}
-      >
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="relative z-10 h-full flex items-center justify-center">
-          <h1 className="text-white text-6xl font-bold">{heroContent.title || 'About Us'}</h1>
-        </div>
-      </section>
+      className="relative h-[350px] w-full overflow-hidden bg-cover bg-center"
+      style={{
+        backgroundImage: heroContent.bgImageUrl 
+          ? `url(${heroContent.bgImageUrl})` 
+          : 'url(https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=1920&auto=format&fit=crop)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: heroContent.bgImageUrl ? 'transparent' : '#1a202c',
+      }}
+    >
+      <div className="absolute inset-0 bg-black/40"></div>
+      <div className="relative z-10 h-full flex items-center justify-center">
+        <h1 className="text-white text-6xl font-bold">{heroContent.title || 'Investor Relations'}</h1>
+      </div>
+    </section>
   );
 }
+

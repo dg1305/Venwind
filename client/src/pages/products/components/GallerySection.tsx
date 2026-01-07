@@ -19,6 +19,7 @@ export default function GallerySection() {
     images: defaultImages,
   });
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     AOS.init({
@@ -56,6 +57,34 @@ export default function GallerySection() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedImage) {
+        setSelectedImage(null);
+      }
+    };
+
+    if (selectedImage) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [selectedImage]);
+
+  const openModal = (image: string) => {
+    setSelectedImage(image);
+  };
+
+  const closeModal = () => {
+    setSelectedImage(null);
+  };
+
   if (loading) {
     return (
       <section className="py-0 bg-gray-900">
@@ -69,22 +98,51 @@ export default function GallerySection() {
   const images = content.images || defaultImages;
 
   return (
-    <section className="py-0 bg-gray-900">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0">
-        {images.map((image, index) => (
+    <>
+      <section className="py-0 bg-gray-900">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0">
+          {images.map((image, index) => (
+            <div 
+              key={index} 
+              className="relative overflow-hidden group cursor-pointer h-80"
+              onClick={() => openModal(image)}
+            >
+              <img 
+                src={image} 
+                alt={`Gallery ${index + 1}`}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={closeModal}
+        >
+          <button
+            onClick={closeModal}
+            className="absolute top-4 right-4 text-white hover:text-[#8DC63F] transition-colors z-10"
+            aria-label="Close modal"
+          >
+            <i className="ri-close-line text-4xl"></i>
+          </button>
           <div 
-            key={index} 
-            className="relative overflow-hidden group cursor-pointer h-80"
+            className="relative max-w-7xl max-h-full"
+            onClick={(e) => e.stopPropagation()}
           >
             <img 
-              src={image} 
-              alt={`Gallery ${index + 1}`}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              src={selectedImage} 
+              alt="Gallery fullscreen"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
             />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
-        ))}
-      </div>
-    </section>
+        </div>
+      )}
+    </>
   );
 }

@@ -193,8 +193,10 @@ app.get("*", (_req, res) => {
 // set port
 const PORT = process.env.APP_PORT || 8080;
 
+// Use sync without alter to avoid MySQL key limit issues
+// The username unique constraint should already exist from previous migrations
 sequelize
-  .sync({ alter: true })
+  .sync()
   .then(() => {
     console.log("Database synced successfully");
     app.listen(PORT, () => {
@@ -203,4 +205,10 @@ sequelize
   })
   .catch((err) => {
     console.error("Error syncing database:", err);
+    // Still start the server even if sync fails (for existing databases)
+    console.log("Starting server anyway...");
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}.`);
+      console.log("Note: If you need schema changes, consider using migrations instead of sync({ alter: true })");
+    });
   });

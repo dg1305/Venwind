@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import { getCMSData } from '../../../utils/cms';
+import { getCMSData, normalizeImageUrl } from '../../../utils/cms';
 
 interface FeatureItem {
   icon: string;
@@ -42,12 +42,29 @@ export default function InnovationSection() {
         const result = await getCMSData('technology', 'innovation', {
           defaultValue: { title: 'Salient features', items: defaultFeatures },
         });
+        
+        // Merge CMS items with defaults - only use defaults if CMS data is missing
+        let mergedItems = defaultFeatures;
+        if (result.data.items && result.data.items.length > 0) {
+          mergedItems = result.data.items.map((item: FeatureItem, index: number) => ({
+            ...item,
+            // Only use default icon if icon is completely missing, not if it's intentionally empty
+            icon: item.icon !== undefined && item.icon !== null ? item.icon.trim() : (defaultFeatures[index]?.icon || ''),
+            title: item.title && item.title.trim() ? item.title.trim() : (defaultFeatures[index]?.title || ''),
+            description: item.description && item.description.trim() ? item.description.trim() : (defaultFeatures[index]?.description || ''),
+          }));
+        }
+        
         setContent({
           title: result.data.title || 'Salient features',
-          items: (result.data.items && result.data.items.length > 0) ? result.data.items : defaultFeatures,
+          items: mergedItems,
         });
       } catch (error) {
         console.error('Error loading innovation content:', error);
+        setContent({
+          title: 'Salient features',
+          items: defaultFeatures,
+        });
       } finally {
         setLoading(false);
       }
@@ -80,6 +97,14 @@ export default function InnovationSection() {
   }
 
   const features = content.items || defaultFeatures;
+  
+  // Filter out items that have no content (no icon, no title, no description)
+  const visibleFeatures = features.filter(feature => {
+    const hasIcon = feature.icon && feature.icon.trim() && feature.icon.trim() !== '';
+    const hasTitle = feature.title && feature.title.trim() && feature.title.trim() !== '';
+    const hasDescription = feature.description && feature.description.trim() && feature.description.trim() !== '';
+    return hasIcon || hasTitle || hasDescription;
+  });
 
   return (
     <section className="py-20 bg-gray-50">
@@ -89,18 +114,40 @@ export default function InnovationSection() {
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-          {features.map((feature, index) => (
+          {visibleFeatures.map((feature, index) => (
             <div 
               key={index}
               className="text-center"
               data-aos="fade-up"
               data-aos-delay={index * 100}
             >
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#8DC63F20' }}>
-                <i className={`${feature.icon} text-4xl`} style={{ color: '#8DC63F' }}></i>
-              </div>
-              <h3 className="text-gray-900 text-xl font-bold mb-4">{feature.title}</h3>
-              <p className="text-gray-700 text-base leading-relaxed">{feature.description}</p>
+              {feature.icon && feature.icon.trim() && feature.icon.trim() !== '' && (
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#8DC63F20' }}>
+                  {(feature.icon.startsWith('http') || feature.icon.startsWith('/') || (feature.icon.includes('.') && !feature.icon.startsWith('ri-'))) ? (
+                    <img 
+                      src={normalizeImageUrl(feature.icon)} 
+                      alt={feature.title}
+                      className="w-12 h-12 object-contain"
+                      onError={(e) => {
+                        // Hide icon container if image fails to load and no fallback
+                        const target = e.target as HTMLImageElement;
+                        const parent = target.parentElement?.parentElement;
+                        if (parent) {
+                          parent.style.display = 'none';
+                        }
+                      }}
+                    />
+                  ) : (
+                    <i className={`${feature.icon} text-4xl`} style={{ color: '#8DC63F' }}></i>
+                  )}
+                </div>
+              )}
+              {feature.title && feature.title.trim() && (
+                <h3 className="text-gray-900 text-xl font-bold mb-4">{feature.title}</h3>
+              )}
+              {feature.description && feature.description.trim() && (
+                <p className="text-gray-700 text-base leading-relaxed">{feature.description}</p>
+              )}
             </div>
           ))}
         </div>

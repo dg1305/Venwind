@@ -45,7 +45,8 @@ export default function HeroSection() {
           if (result.success && result.data && Object.keys(result.data).length > 0) {
             setHeroContent(prev => ({
               ...prev,
-              ...result.data
+              ...result.data,
+              buttonLink: result.data.buttonLink || prev.buttonLink || '/products'
             }));
             setLoading(false);
             return;
@@ -62,7 +63,8 @@ export default function HeroSection() {
           const parsed = JSON.parse(savedContent);
           setHeroContent(prev => ({
             ...prev,
-            ...parsed
+            ...parsed,
+            buttonLink: parsed.buttonLink || prev.buttonLink || '/products'
           }));
         } catch (error) {
           console.error('Error loading hero content from localStorage:', error);

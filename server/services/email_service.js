@@ -25,7 +25,7 @@ class EmailService {
       // Email content
       const mailOptions = {
         from: process.env.SMTP_USER || 'your-email@gmail.com',
-        to: 'info@refex.co.in',
+        to: 'contact@venwindrefex.com',
         subject: `New Contact Form Submission from ${name}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">

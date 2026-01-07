@@ -50,7 +50,7 @@ export default function HeroSection() {
 
   if (loading) {
     return (
-      <section className="relative w-full h-[400px] bg-cover bg-center flex items-center justify-center">
+      <section className="relative w-full h-[350px] bg-cover bg-center flex items-center justify-center">
         <div className="absolute inset-0 bg-black/30"></div>
         <div className="relative z-10">
           <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -61,7 +61,7 @@ export default function HeroSection() {
 
   return (
     <section 
-      className="relative w-full h-[400px] bg-cover bg-center flex items-center justify-center"
+      className="relative w-full h-[350px] bg-cover bg-center flex items-center justify-center"
       style={{
         backgroundImage: heroContent.bgImageUrl 
           ? `url(${heroContent.bgImageUrl})` 
