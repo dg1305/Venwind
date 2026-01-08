@@ -111,6 +111,9 @@ export default function DifferentiatorsSection() {
             <h2 className="text-gray-900 text-4xl lg:text-5xl font-bold mb-6" data-aos="fade-left" data-aos-duration="1000">
               {data.title || 'Our differentiators'}
             </h2>
+            <p className="text-gray-700 text-lg leading-relaxed mb-8" data-aos="fade-left" data-aos-delay="100">
+              Offering wind turbines with advanced German technology from Vensys Energy AG at competitive prices.
+            </p>
             {!loading && (
               <div className="space-y-6">
                 {features.map((feature, index) => (

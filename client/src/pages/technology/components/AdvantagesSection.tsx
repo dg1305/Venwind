@@ -166,9 +166,24 @@ export default function AdvantagesSection() {
                     role="region"
                   >
                     <div className="pl-10 pr-0">
-                      <p className="text-gray-700 text-sm leading-relaxed">
-                        {advantage.content}
-                      </p>
+                      {advantage.content.includes('. ') && advantage.content.split('. ').filter(s => s.trim().length > 0).length > 1 ? (
+                        <ul className="text-gray-700 text-sm leading-relaxed space-y-2 list-none">
+                          {advantage.content.split('. ').filter(s => s.trim().length > 0).map((sentence, idx) => {
+                            const trimmed = sentence.trim();
+                            const cleanSentence = trimmed.endsWith('.') ? trimmed.slice(0, -1) : trimmed;
+                            return (
+                              <li key={idx} className="flex items-start">
+                                <span className="mr-2 text-gray-400 flex-shrink-0">•</span>
+                                <span>{cleanSentence}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <p className="text-gray-700 text-sm leading-relaxed">
+                          {advantage.content}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -245,13 +245,13 @@ export default function Footer() {
                     href="tel:+914435040050" 
                     className="text-gray-300 text-sm hover:text-[#8DC63F] transition-colors"
                   >
-                    +91 044 - 3504 0050
+                    +91 44 - 3504 0050
                   </a>
                   <a 
                     href="tel:+914469908410" 
                     className="text-gray-300 text-sm hover:text-[#8DC63F] transition-colors"
                   >
-                    +91 044 - 6990 8410
+                    +91 44 - 6990 8410
                   </a>
                 </div>
               </div>

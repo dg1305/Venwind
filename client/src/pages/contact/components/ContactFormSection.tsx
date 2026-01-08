@@ -20,8 +20,8 @@ interface ContactInfoContent {
 const defaultContactInfo: ContactInfoContent = {
   title: 'Have questions?\nGet in touch!',
   companyName: 'Venwind Refex Power Limited',
-  address: 'CIN: U27101TN2024PLC175572\n2nd floor, Refex Towers, 313, Valluvar Kottam High Road, Nungambakkam,\nChennai-600034, Tamil Nadu, India',
-  phone: '+91 044 - 6990 8410',
+  address: 'CIN: U27101TN2024PLC175572\n2nd floor, Refex Towers, 313,\nValluvar Kottam High Road,\n Nungambakkam,Chennai-600034,\n Tamil Nadu, India',
+  phone: '+91 44 - 6990 8410',
   email: 'contact@venwindrefex.com',
   facebookUrl: 'https://www.facebook.com/refexindustrieslimited/',
   twitterUrl: 'https://x.com/GroupRefex',
@@ -190,12 +190,18 @@ export default function ContactFormSection() {
               <div className="w-6 h-6 flex items-center justify-center mr-4 mt-1">
                 <i className="ri-smartphone-line text-gray-500 text-xl"></i>
               </div>
-              <div>
+              <div className="flex flex-col gap-1">
                 <a 
-                  href={`tel:${contactInfo.phone || defaultContactInfo.phone}`}
+                  href="tel:+914435040050"
                   className="text-gray-600 text-sm hover:text-[#8DC63F] transition-colors"
                 >
-                  {contactInfo.phone || defaultContactInfo.phone}
+                  +91 44 - 3504 0050
+                </a>
+                <a 
+                  href="tel:+914469908410"
+                  className="text-gray-600 text-sm hover:text-[#8DC63F] transition-colors"
+                >
+                  +91 44 - 6990 8410
                 </a>
               </div>
             </div>

@@ -565,7 +565,7 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                          <input type="text" name="phone" defaultValue={getFieldValue('home', 'footer', 'phone')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="+1 234 567 8900" />
+                          <input type="text" name="phone" defaultValue={getFieldValue('home', 'footer', 'phone')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="+91 44 - 3504 0050" />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
@@ -1391,7 +1391,7 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                          <input type="text" name="phone" defaultValue={getFieldValue('contact', 'info', 'phone')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="+1 234 567 8900" />
+                          <input type="text" name="phone" defaultValue={getFieldValue('contact', 'info', 'phone')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="+91 44 - 3504 0050" />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>

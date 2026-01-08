@@ -16,8 +16,9 @@ interface BenefitsContent {
 
 const defaultBenefits: BenefitItem[] = [
   { title: 'Improved Power Generation', content: 'Higher wind energy utilization and adaptability. Large rotor diameter and higher hub height for its class. Lesser BOP and O&M costs due to larger size resulting in improved LCOE' },
-  { title: 'Reduced Maintenance', content: 'Elimination of high-speed couplings and slip ring carbon brushes, cutting fault rates by 70% compared to DFIG wind turbines' },
-  { title: 'Enhanced Reliability', content: 'Permanent magnet synchronous generator and full-scale power converter enables rapid dispatch response, more active power/frequency, reactive power/voltage control' },
+  { title: 'Technology optimization', content: 'Optimized design strategy to get advantage of permanent magnet generator at medium speed' },
+  { title: 'Lesser maintenance', content: 'Medium speed Gearbox (MSPM) design ensures minimum maintenance and high reliability' },
+  { title: 'Reliability', content: 'German technology with more than 2GW installations of the 5.3MW WTG platform worldwide by Vensys technology partners' },
 ];
 
 export default function BenefitsSection() {
@@ -145,9 +146,24 @@ export default function BenefitsSection() {
                     role="region"
                   >
                     <div className="pl-10 pr-0">
-                      <p className="text-gray-700 text-sm leading-relaxed">
-                        {benefit.content}
-                      </p>
+                      {benefit.content.includes('. ') && benefit.content.split('. ').filter(s => s.trim().length > 0).length > 1 ? (
+                        <ul className="text-gray-700 text-sm leading-relaxed space-y-2 list-none">
+                          {benefit.content.split('. ').filter(s => s.trim().length > 0).map((sentence, idx) => {
+                            const trimmed = sentence.trim();
+                            const cleanSentence = trimmed.endsWith('.') ? trimmed.slice(0, -1) : trimmed;
+                            return (
+                              <li key={idx} className="flex items-start">
+                                <span className="mr-2 text-gray-400 flex-shrink-0">•</span>
+                                <span>{cleanSentence}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <p className="text-gray-700 text-sm leading-relaxed">
+                          {benefit.content}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
