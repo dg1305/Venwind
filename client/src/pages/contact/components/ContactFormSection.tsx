@@ -10,6 +10,7 @@ interface ContactInfoContent {
   address?: string;
   phone?: string;
   email?: string;
+  email2?: string;
   facebookUrl?: string;
   twitterUrl?: string;
   linkedinUrl?: string;
@@ -22,7 +23,8 @@ const defaultContactInfo: ContactInfoContent = {
   companyName: 'Venwind Refex Power Limited',
   address: 'CIN: U27101TN2024PLC175572\n2nd floor, Refex Towers, 313,\nValluvar Kottam High Road,\n Nungambakkam,Chennai-600034,\n Tamil Nadu, India',
   phone: '+91 44 - 6990 8410',
-  email: 'contact@venwindrefex.com',
+  email: 'cscompliance@refex.co.in',
+  email2: 'contact@venwindrefex.com',
   facebookUrl: 'https://www.facebook.com/refexindustrieslimited/',
   twitterUrl: 'https://x.com/GroupRefex',
   linkedinUrl: 'https://in.linkedin.com/company/venwind-refex-power-limited',
@@ -71,6 +73,9 @@ export default function ContactFormSection() {
           email: (result.data?.email && typeof result.data.email === 'string' && result.data.email.trim()) 
             ? result.data.email 
             : defaultContactInfo.email,
+          email2: (result.data?.email2 && typeof result.data.email2 === 'string' && result.data.email2.trim()) 
+            ? result.data.email2 
+            : defaultContactInfo.email2,
           facebookUrl: (result.data?.facebookUrl && typeof result.data.facebookUrl === 'string' && result.data.facebookUrl.trim()) 
             ? result.data.facebookUrl 
             : defaultContactInfo.facebookUrl,
@@ -211,13 +216,21 @@ export default function ContactFormSection() {
               <div className="w-6 h-6 flex items-center justify-center mr-4 mt-1">
                 <i className="ri-mail-line text-gray-500 text-xl"></i>
               </div>
-              <div>
+              <div className="flex flex-col gap-1">
                 <a 
                   href={`mailto:${contactInfo.email || defaultContactInfo.email}`}
                   className="text-gray-600 text-sm hover:text-[#8DC63F] transition-colors"
                 >
                   {contactInfo.email || defaultContactInfo.email}
                 </a>
+                {(contactInfo.email2 || defaultContactInfo.email2) && (
+                  <a 
+                    href={`mailto:${contactInfo.email2 || defaultContactInfo.email2}`}
+                    className="text-gray-600 text-sm hover:text-[#8DC63F] transition-colors"
+                  >
+                    {contactInfo.email2 || defaultContactInfo.email2}
+                  </a>
+                )}
               </div>
             </div>
 
@@ -306,12 +319,11 @@ export default function ContactFormSection() {
                   <div className="flex items-center border-b border-gray-300 pb-2">
                     <i className="ri-mail-line text-gray-400 mr-3"></i>
                     <input
-                      type="email"
+                      type="text"
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder="Email Address"
-                      required
                       className="w-full bg-transparent text-gray-900 placeholder-gray-400 focus:outline-none text-sm"
                     />
                   </div>

@@ -40,6 +40,7 @@ export default function AdminContactPage() {
       dataObj.address = (formData.get('address') as string)?.trim() || '';
       dataObj.phone = (formData.get('phone') as string)?.trim() || '';
       dataObj.email = (formData.get('email') as string)?.trim() || '';
+      dataObj.email2 = (formData.get('email2') as string)?.trim() || '';
       dataObj.facebookUrl = (formData.get('facebookUrl') as string)?.trim() || '';
       dataObj.twitterUrl = (formData.get('twitterUrl') as string)?.trim() || '';
       dataObj.linkedinUrl = (formData.get('linkedinUrl') as string)?.trim() || '';
@@ -152,7 +153,11 @@ export default function AdminContactPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input type="email" name="email" defaultValue={getFieldValue('contact-info', 'email')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="contact@venwindrefex.com" />
+                  <input type="email" name="email" defaultValue={getFieldValue('contact-info', 'email')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="cscompliance@refex.co.in" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email 2</label>
+                  <input type="email" name="email2" defaultValue={getFieldValue('contact-info', 'email2')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="contact@venwindrefex.com" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
