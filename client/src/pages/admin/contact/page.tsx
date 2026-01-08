@@ -200,26 +200,31 @@ export default function AdminContactPage() {
             <form onSubmit={(e) => handleSubmit(e, 'email-config')}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sender Email (From)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Sender Email (From) <span className="text-gray-500 text-xs">(Optional - for display name/reply-to)</span>
+                  </label>
                   <input 
                     type="email" 
                     name="senderEmail" 
-                    defaultValue={getFieldValue('email-config', 'senderEmail') || 'crm@refex.co.in'} 
+                    defaultValue={getFieldValue('email-config', 'senderEmail') || ''} 
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
                     placeholder="crm@refex.co.in" 
                   />
-                  <p className="text-xs text-gray-500 mt-1">Email address that will appear as the sender of contact form emails</p>
+                  <p className="text-xs text-gray-500 mt-1">This email will be used as the reply-to address. The actual sender will be your SMTP_USER from server configuration.</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Receiver Email (To)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Receiver Email (To) <span className="text-red-500">*</span> <span className="text-gray-500 text-xs">(Required)</span>
+                  </label>
                   <input 
                     type="email" 
                     name="receiverEmail" 
-                    defaultValue={getFieldValue('email-config', 'receiverEmail') || 'contact@venwindrefex.com'} 
+                    defaultValue={getFieldValue('email-config', 'receiverEmail') || ''} 
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
                     placeholder="contact@venwindrefex.com" 
+                    required
                   />
-                  <p className="text-xs text-gray-500 mt-1">Email address where contact form submissions will be sent. Default: contact@venwindrefex.com</p>
+                  <p className="text-xs text-gray-500 mt-1">All contact form emails will be sent to this email address. This field is required.</p>
                 </div>
                 <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors">
                   <i className="ri-save-line mr-2"></i>Save Changes

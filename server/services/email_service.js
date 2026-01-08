@@ -60,8 +60,22 @@ class EmailService {
         console.error('Emails will be sent from this Readdy address. To send from crm@refex.co.in, update SMTP_USER in server/.env file');
       }
       
-      // Use receiver from CMS or default
-      const toEmail = receiverEmail || 'contact@venwindrefex.com';
+      // Use receiver from CMS - REQUIRED (no default)
+      if (!receiverEmail || !receiverEmail.trim()) {
+        throw new Error('Receiver email is required but not provided. Please configure it in CMS.');
+      }
+      
+      const toEmail = receiverEmail.trim();
+      
+      // Validate email format before sending
+      if (!toEmail.includes('@') || toEmail.length < 5) {
+        throw new Error(`Invalid receiver email format: ${toEmail}. Please configure a valid email address in CMS.`);
+      }
+      
+      console.log('📧 Email Service - Contact Form Email:');
+      console.log('  From (SMTP_USER):', smtpAuthUser);
+      console.log('  To (Receiver):', toEmail);
+      console.log('  Receiver Email Parameter:', receiverEmail);
       
       // Format "from" with display name - use SMTP_USER as the actual email
       // The senderEmail from CMS is used for display name, but actual from must be SMTP_USER
@@ -71,10 +85,6 @@ class EmailService {
         console.error('⚠️  Contact form emails will be sent FROM this Readdy address.');
         console.error('⚠️  To send from crm@refex.co.in, you MUST update SMTP_USER in server/.env file to crm@refex.co.in');
       }
-      
-      // Log the SMTP_USER being used for debugging
-      console.log('Sending contact form email using SMTP_USER:', smtpAuthUser);
-      console.log('Receiver email:', toEmail);
       
       // Always use Venwind Refex as display name to avoid showing Readdy AI
       const displayName = 'Venwind Refex';
@@ -188,11 +198,14 @@ IP Address: ${formData.ipAddress || 'Not available'}
       };
 
       // Send email
-      console.log('Attempting to send email...');
-      console.log('From:', fromDisplay);
-      console.log('To:', toEmail);
+      console.log('📧 Attempting to send contact form email...');
+      console.log('  From:', fromDisplay);
+      console.log('  To:', toEmail);
+      console.log('  Subject:', mailOptions.subject);
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('Email sent successfully:', result.messageId);
+      console.log('✅ Contact form email sent successfully!');
+      console.log('  Message ID:', result.messageId);
+      console.log('  Response:', result.response || 'No response');
       
       return {
         success: true,
@@ -411,8 +424,22 @@ Email: cscompliance@refex.co.in | contact@venwindrefex.com
         console.error('⚠️  To send from crm@refex.co.in, you MUST update SMTP_USER in server/.env file to crm@refex.co.in');
       }
       
-      // Use receiver from CMS or default
-      const toEmail = receiverEmail || 'contact@venwindrefex.com';
+      // Use receiver from CMS - REQUIRED (no default)
+      if (!receiverEmail || !receiverEmail.trim()) {
+        throw new Error('Receiver email is required but not provided. Please configure it in CMS.');
+      }
+      
+      const toEmail = receiverEmail.trim();
+      
+      // Validate email format before sending
+      if (!toEmail.includes('@') || toEmail.length < 5) {
+        throw new Error(`Invalid receiver email format: ${toEmail}. Please configure a valid email address in CMS.`);
+      }
+      
+      console.log('📧 Email Service - Careers Application Email:');
+      console.log('  From (SMTP_USER):', smtpAuthUser);
+      console.log('  To (Receiver):', toEmail);
+      console.log('  Receiver Email Parameter:', receiverEmail);
       
       // Always use Venwind Refex as display name
       const displayName = 'Venwind Refex';
@@ -533,11 +560,15 @@ IP Address: ${ipAddress || 'Not available'}
       }
 
       // Send email
-      console.log('Attempting to send careers application email...');
-      console.log('From:', fromDisplay);
-      console.log('To:', toEmail);
+      console.log('📧 Attempting to send careers application email...');
+      console.log('  From:', fromDisplay);
+      console.log('  To:', toEmail);
+      console.log('  Subject:', mailOptions.subject);
+      console.log('  Resume attached:', resumePath ? 'Yes' : 'No');
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('Careers application email sent successfully:', result.messageId);
+      console.log('✅ Careers application email sent successfully!');
+      console.log('  Message ID:', result.messageId);
+      console.log('  Response:', result.response || 'No response');
       
       return {
         success: true,

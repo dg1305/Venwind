@@ -46,6 +46,9 @@ export default function AdminCareersPage() {
       dataObj.address = (formData.get('address') as string)?.trim() || '';
       dataObj.phone = (formData.get('phone') as string)?.trim() || '';
       dataObj.email = (formData.get('email') as string)?.trim() || '';
+    } else if (section === 'email-config') {
+      dataObj.senderEmail = (formData.get('senderEmail') as string)?.trim() || '';
+      dataObj.receiverEmail = (formData.get('receiverEmail') as string)?.trim() || '';
     } else {
       formData.forEach((value, key) => { 
         if (typeof value === 'string') {
@@ -76,7 +79,7 @@ export default function AdminCareersPage() {
     );
   }
 
-  const sections = ['hero', 'application', 'map'];
+  const sections = ['hero', 'application', 'map', 'email-config'];
 
   return (
     <AdminLayout pageName="Careers" pagePath="/careers">
@@ -196,6 +199,53 @@ export default function AdminCareersPage() {
                   <input type="email" name="email" defaultValue={getFieldValue('map', 'email')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="contact@venwindrefex.com" />
                 </div>
                 <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors">
+                  <i className="ri-save-line mr-2"></i>Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Email Configuration Section */}
+        {activeSection === 'email-config' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Email Configuration</h2>
+            <form onSubmit={(e) => handleSubmit(e, 'email-config')}>
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> Configure where career application emails should be sent. 
+                    The "Receiver Email (To)" field is required - applications will be sent to this email address.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Sender Email (From) <span className="text-gray-500 text-xs">(Optional - for display name/reply-to)</span>
+                  </label>
+                  <input 
+                    type="email" 
+                    name="senderEmail" 
+                    defaultValue={getFieldValue('email-config', 'senderEmail') || ''} 
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
+                    placeholder="crm@refex.co.in" 
+                  />
+                  <p className="text-xs text-gray-500 mt-1">This email will be used as the reply-to address. The actual sender will be your SMTP_USER from server configuration.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Receiver Email (To) <span className="text-red-500">*</span> <span className="text-gray-500 text-xs">(Required)</span>
+                  </label>
+                  <input 
+                    type="email" 
+                    name="receiverEmail" 
+                    defaultValue={getFieldValue('email-config', 'receiverEmail') || ''} 
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" 
+                    placeholder="hr@venwindrefex.com" 
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">All career application emails will be sent to this email address. This field is required.</p>
+                </div>
+                <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors whitespace-nowrap">
                   <i className="ri-save-line mr-2"></i>Save Changes
                 </button>
               </div>

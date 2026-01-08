@@ -79,38 +79,89 @@ router.post('/contact-form', [
       timestamp: new Date().toISOString()
     };
 
-    // Fetch email configuration from CMS
+    // Fetch email configuration from CMS - REQUIRED
     // Default sender is SMTP_USER (must match authenticated account)
     let senderEmail = process.env.SMTP_USER || null; // Will use SMTP_USER in email service
-    let receiverEmail = 'contact@venwindrefex.com'; // Default receiver
+    let receiverEmail = null; // No default - must be configured in CMS
     
     try {
       const emailConfig = await CmsContent.findOne({
         where: { page: 'contact', section: 'email-config' },
       });
       
+      console.log('📧 Email config from CMS:', JSON.stringify(emailConfig ? emailConfig.data : null, null, 2));
+      
       if (emailConfig && emailConfig.data) {
+        // Handle both JSON string and object formats
+        const configData = typeof emailConfig.data === 'string' ? JSON.parse(emailConfig.data) : emailConfig.data;
+        
         // Sender email from CMS (used for display name/reply-to, but actual from will be SMTP_USER)
-        if (emailConfig.data.senderEmail && emailConfig.data.senderEmail.trim()) {
-          senderEmail = emailConfig.data.senderEmail.trim();
+        if (configData.senderEmail && typeof configData.senderEmail === 'string' && configData.senderEmail.trim()) {
+          senderEmail = configData.senderEmail.trim();
+          console.log('📧 Using sender email from CMS:', senderEmail);
         }
-        // Receiver email from CMS (where emails are actually sent)
-        if (emailConfig.data.receiverEmail && emailConfig.data.receiverEmail.trim()) {
-          receiverEmail = emailConfig.data.receiverEmail.trim();
+        // Receiver email from CMS (where emails are actually sent) - REQUIRED
+        if (configData.receiverEmail && typeof configData.receiverEmail === 'string' && configData.receiverEmail.trim()) {
+          const trimmedEmail = configData.receiverEmail.trim();
+          // Validate email format
+          if (trimmedEmail.includes('@') && trimmedEmail.length > 3) {
+            receiverEmail = trimmedEmail;
+            console.log('✅ Using receiver email from CMS:', receiverEmail);
+          } else {
+            console.error('❌ Invalid receiver email format in CMS:', trimmedEmail);
+            throw new Error('Invalid receiver email format configured in CMS. Please set a valid email address in Admin → Contact → Email Config.');
+          }
+        } else {
+          console.error('❌ Receiver email not configured in CMS');
+          throw new Error('Receiver email is not configured. Please set the "Receiver Email (To)" field in Admin → Contact → Email Config section.');
         }
+      } else {
+        console.error('❌ No email config found in CMS for contact page');
+        throw new Error('Email configuration not found. Please configure the receiver email in Admin → Contact → Email Config section.');
       }
     } catch (error) {
-      console.warn('Failed to fetch email config from CMS, using defaults:', error.message);
+      console.error('❌ Failed to fetch email config from CMS:', error.message);
+      if (error.message.includes('not configured') || error.message.includes('not found') || error.message.includes('Invalid')) {
+        // Re-throw configuration errors
+        throw error;
+      }
+      console.error('Stack trace:', error.stack);
+      throw new Error('Failed to fetch email configuration from CMS. Please ensure the receiver email is configured in Admin → Contact → Email Config.');
     }
 
+    // Final validation - receiver email must be set
+    if (!receiverEmail || !receiverEmail.includes('@')) {
+      throw new Error('Receiver email is not configured. Please set the "Receiver Email (To)" field in Admin → Contact → Email Config section.');
+    }
+
+    console.log('📧 Sending contact form email to:', receiverEmail);
+    console.log('📋 Contact form details:', {
+      name: name,
+      email: email,
+      receiverEmail: receiverEmail
+    });
+
     // Send email with configured sender and receiver
-    const emailResult = await emailService.sendContactFormEmail(formData, senderEmail, receiverEmail);
+    let emailResult;
+    try {
+      emailResult = await emailService.sendContactFormEmail(formData, senderEmail, receiverEmail);
+      console.log('✅ MAIN CONTACT FORM EMAIL SENT SUCCESSFULLY!');
+      console.log('   Message ID:', emailResult.messageId);
+      console.log('   Sent to:', receiverEmail);
+    } catch (emailError) {
+      console.error('❌ FAILED TO SEND MAIN CONTACT FORM EMAIL:', emailError.message);
+      throw emailError; // Re-throw to trigger error handler
+    }
 
     // Send auto-reply to customer (optional - you can remove this if not needed)
+    console.log('📧 Sending auto-reply to customer:', email);
     try {
       await emailService.sendAutoReply(email, name, senderEmail);
+      console.log('✅ AUTO-REPLY EMAIL SENT SUCCESSFULLY!');
+      console.log('   Sent to customer:', email);
     } catch (autoReplyError) {
-      console.warn('Auto-reply failed, but main email was sent:', autoReplyError.message);
+      console.warn('⚠️  Auto-reply failed, but main email was sent:', autoReplyError.message);
+      // Don't throw - auto-reply failure shouldn't fail the whole submission
     }
 
     // Log successful submission
@@ -159,6 +210,45 @@ router.get('/test-email', async (req, res) => {
       success: false,
       message: 'Email service test failed',
       error: error.message
+    });
+  }
+});
+
+// Test email sending with actual email (for debugging)
+router.post('/test-email-send', async (req, res) => {
+  try {
+    const { testEmail } = req.body;
+    const receiverEmail = testEmail || 'contact@venwindrefex.com';
+    
+    console.log('🧪 Testing email send to:', receiverEmail);
+    
+    const testFormData = {
+      name: 'Test User',
+      email: 'test@example.com',
+      phone: '1234567890',
+      company: 'Test Company',
+      message: 'This is a test email from the Venwind Refex contact form system.',
+      recaptchaToken: 'test',
+      ipAddress: '127.0.0.1',
+      timestamp: new Date().toISOString()
+    };
+    
+    const senderEmail = process.env.SMTP_USER || null;
+    const emailResult = await emailService.sendContactFormEmail(testFormData, senderEmail, receiverEmail);
+    
+    res.json({
+      success: true,
+      message: `Test email sent successfully to ${receiverEmail}`,
+      messageId: emailResult.messageId,
+      receiverEmail: receiverEmail
+    });
+  } catch (error) {
+    console.error('Test email send error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send test email',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
