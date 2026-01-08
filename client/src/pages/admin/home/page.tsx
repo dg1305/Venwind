@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import AdminLayout, { API_BASE_URL } from '../components/AdminLayout';
+import AdminLayout, { API_BASE_URL, deleteUploadedFile } from '../components/AdminLayout';
 import { useCMSData } from '../hooks/useCMSData';
 
 export default function AdminHomePage() {
   const [activeSection, setActiveSection] = useState('hero');
   const { getFieldValue, loading } = useCMSData('home');
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0];
@@ -22,15 +23,61 @@ export default function AdminHomePage() {
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.imageUrl) {
+          const fullUrl = `${API_BASE_URL}${result.imageUrl}`;
           const input = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
           if (input) {
-            input.value = `${API_BASE_URL}${result.imageUrl}`;
+            input.value = fullUrl;
           }
+          setImageUrls(prev => ({ ...prev, [fieldName]: fullUrl }));
         }
       }
     } catch (error) {
       console.error('Error uploading image:', error);
     }
+  };
+
+  const handleImageDelete = async (fieldName: string) => {
+    const input = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
+    if (!input || !input.value) return;
+
+    const imageUrl = input.value;
+    
+    // Check if it's an uploaded file (starts with /uploads/)
+    if (imageUrl.includes('/uploads/')) {
+      if (confirm('Are you sure you want to delete this image? This will remove the file from the server.')) {
+        const success = await deleteUploadedFile(imageUrl);
+        if (success) {
+          input.value = '';
+          setImageUrls(prev => {
+            const newUrls = { ...prev };
+            delete newUrls[fieldName];
+            return newUrls;
+          });
+          alert('Image deleted successfully!');
+        } else {
+          alert('Failed to delete image. It may have already been deleted.');
+        }
+      }
+    } else {
+      // For external URLs, just clear the field
+      if (confirm('Remove this image URL?')) {
+        input.value = '';
+        setImageUrls(prev => {
+          const newUrls = { ...prev };
+          delete newUrls[fieldName];
+          return newUrls;
+        });
+      }
+    }
+  };
+
+  // Helper to check if field has an image
+  const hasImage = (fieldName: string, section?: string) => {
+    const input = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
+    const currentValue = input?.value && input.value.trim() !== '';
+    const storedValue = imageUrls[fieldName];
+    const defaultValue = section ? getFieldValue(section, fieldName) : '';
+    return storedValue || currentValue || (defaultValue && defaultValue.trim() !== '');
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, section: string) => {
@@ -158,13 +205,25 @@ export default function AdminHomePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Background Image URL (fallback)</label>
-                  <input
-                    type="url"
-                    name="bgImageUrl"
-                    defaultValue={getFieldValue('hero', 'bgImageUrl')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
-                    placeholder="https://example.com/image.jpg"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      name="bgImageUrl"
+                      defaultValue={getFieldValue('hero', 'bgImageUrl')}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                    {hasImage('bgImageUrl', 'hero') && (
+                      <button
+                        type="button"
+                        onClick={() => handleImageDelete('bgImageUrl')}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        title="Delete image"
+                      >
+                        <i className="ri-delete-bin-line"></i>
+                      </button>
+                    )}
+                  </div>
                   <div className="mt-2">
                     <label className="block text-sm text-gray-600 mb-1">Or upload image:</label>
                     <input
@@ -191,13 +250,25 @@ export default function AdminHomePage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Background Image URL</label>
-                  <input
-                    type="url"
-                    name="bgImageUrl"
-                    defaultValue={getFieldValue('stats', 'bgImageUrl')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
-                    placeholder="https://example.com/stats-bg.jpg"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      name="bgImageUrl"
+                      defaultValue={getFieldValue('stats', 'bgImageUrl')}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+                      placeholder="https://example.com/stats-bg.jpg"
+                    />
+                    {hasImage('bgImageUrl', 'hero') && (
+                      <button
+                        type="button"
+                        onClick={() => handleImageDelete('bgImageUrl')}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        title="Delete image"
+                      >
+                        <i className="ri-delete-bin-line"></i>
+                      </button>
+                    )}
+                  </div>
                   <div className="mt-2">
                     <input
                       type="file"
@@ -275,7 +346,19 @@ export default function AdminHomePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Feature 1 Image URL</label>
-                  <input type="url" name="feature1Image" defaultValue={getFieldValue('differentiators', 'feature1Image')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature1.jpg" />
+                  <div className="flex gap-2">
+                    <input type="url" name="feature1Image" defaultValue={getFieldValue('differentiators', 'feature1Image')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature1.jpg" />
+                    {hasImage('feature1Image', 'differentiators') && (
+                      <button
+                        type="button"
+                        onClick={() => handleImageDelete('feature1Image')}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        title="Delete image"
+                      >
+                        <i className="ri-delete-bin-line"></i>
+                      </button>
+                    )}
+                  </div>
                   <div className="mt-2">
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'feature1Image')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                   </div>
@@ -290,7 +373,19 @@ export default function AdminHomePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Feature 2 Image URL</label>
-                  <input type="url" name="feature2Image" defaultValue={getFieldValue('differentiators', 'feature2Image')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature2.jpg" />
+                  <div className="flex gap-2">
+                    <input type="url" name="feature2Image" defaultValue={getFieldValue('differentiators', 'feature2Image')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature2.jpg" />
+                    {hasImage('feature2Image', 'differentiators') && (
+                      <button
+                        type="button"
+                        onClick={() => handleImageDelete('feature2Image')}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        title="Delete image"
+                      >
+                        <i className="ri-delete-bin-line"></i>
+                      </button>
+                    )}
+                  </div>
                   <div className="mt-2">
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'feature2Image')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                   </div>
@@ -305,7 +400,19 @@ export default function AdminHomePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Feature 3 Image URL</label>
-                  <input type="url" name="feature3Image" defaultValue={getFieldValue('differentiators', 'feature3Image')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature3.jpg" />
+                  <div className="flex gap-2">
+                    <input type="url" name="feature3Image" defaultValue={getFieldValue('differentiators', 'feature3Image')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature3.jpg" />
+                    {hasImage('feature3Image', 'differentiators') && (
+                      <button
+                        type="button"
+                        onClick={() => handleImageDelete('feature3Image')}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        title="Delete image"
+                      >
+                        <i className="ri-delete-bin-line"></i>
+                      </button>
+                    )}
+                  </div>
                   <div className="mt-2">
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'feature3Image')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                   </div>
@@ -330,7 +437,19 @@ export default function AdminHomePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Logo Image URL (optional)</label>
-                  <input type="url" name="logoUrl" defaultValue={getFieldValue('header', 'logoUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/logo.png" />
+                  <div className="flex gap-2">
+                    <input type="url" name="logoUrl" defaultValue={getFieldValue('header', 'logoUrl')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/logo.png" />
+                    {hasImage('logoUrl', 'header') && (
+                      <button
+                        type="button"
+                        onClick={() => handleImageDelete('logoUrl')}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        title="Delete image"
+                      >
+                        <i className="ri-delete-bin-line"></i>
+                      </button>
+                    )}
+                  </div>
                   <div className="mt-2">
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'logoUrl')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                   </div>

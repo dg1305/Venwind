@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as React from 'react';
-import AdminLayout, { API_BASE_URL } from '../components/AdminLayout';
+import AdminLayout, { API_BASE_URL, deleteUploadedFile } from '../components/AdminLayout';
 import { useCMSData } from '../hooks/useCMSData';
 
 export default function AdminInvestorRelationsPage() {
@@ -77,6 +77,37 @@ export default function AdminInvestorRelationsPage() {
       alert('Failed to upload image. Please try again.');
     } finally {
       e.target.value = '';
+    }
+  };
+
+  const handleImageDelete = async (fieldName: string) => {
+    const input = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
+    if (!input || !input.value) return;
+
+    const imageUrl = input.value;
+    
+    // Check if it's an uploaded file (starts with /uploads/)
+    if (imageUrl.includes('/uploads/')) {
+      if (confirm('Are you sure you want to delete this image? This will remove the file from the server.')) {
+        const success = await deleteUploadedFile(imageUrl);
+        if (success) {
+          input.value = '';
+          if (fieldName === 'bgImageUrl') {
+            setHeroImageUrl('');
+          }
+          alert('Image deleted successfully!');
+        } else {
+          alert('Failed to delete image. It may have already been deleted.');
+        }
+      }
+    } else {
+      // For external URLs, just clear the field
+      if (confirm('Remove this image URL?')) {
+        input.value = '';
+        if (fieldName === 'bgImageUrl') {
+          setHeroImageUrl('');
+        }
+      }
     }
   };
 
@@ -207,6 +238,74 @@ export default function AdminInvestorRelationsPage() {
     } finally {
       setUploadingFiles(prev => ({ ...prev, [uploadKey]: false }));
       e.target.value = '';
+    }
+  };
+
+  const handleFileDelete = async (docIndex: number) => {
+    const doc = formData.documents[docIndex - 1];
+    if (!doc || !doc.url) return;
+
+    console.log('Deleting file:', doc.url);
+    
+    if (confirm('Are you sure you want to delete this file? This will remove the file from the server.')) {
+      const success = await deleteUploadedFile(doc.url);
+      if (success) {
+        // Remove the document from the array
+        const newDocuments = [...formData.documents];
+        newDocuments[docIndex - 1] = { name: '', url: '', description: '' };
+        setFormData(prev => ({ ...prev, documents: newDocuments }));
+        alert('File deleted successfully!');
+      } else {
+        // Don't show alert here, deleteUploadedFile already shows error messages
+      }
+    }
+  };
+
+  const handleClearAllDocuments = async () => {
+    const documentsWithFiles = formData.documents.filter(doc => doc.url);
+    
+    if (documentsWithFiles.length === 0) {
+      alert('No documents to clear.');
+      return;
+    }
+
+    if (confirm(`Are you sure you want to remove all ${documentsWithFiles.length} document(s)? This will clear all document entries from this section.`)) {
+      // Optionally delete files from server
+      const deleteFiles = confirm('Do you also want to delete the actual files from the server? (Click Cancel to only remove from CMS)');
+      
+      if (deleteFiles) {
+        let deletedCount = 0;
+        let failedCount = 0;
+        
+        for (const doc of documentsWithFiles) {
+          if (doc.url) {
+            const success = await deleteUploadedFile(doc.url);
+            if (success) {
+              deletedCount++;
+            } else {
+              failedCount++;
+            }
+          }
+        }
+        
+        if (deletedCount > 0) {
+          alert(`${deletedCount} file(s) deleted from server${failedCount > 0 ? `, ${failedCount} failed` : ''}.`);
+        }
+      }
+      
+      // Clear all documents from form
+      setFormData(prev => ({
+        ...prev,
+        documents: [
+          { name: '', url: '', description: '' },
+          { name: '', url: '', description: '' },
+          { name: '', url: '', description: '' },
+          { name: '', url: '', description: '' },
+          { name: '', url: '', description: '' },
+        ]
+      }));
+      
+      alert('All documents cleared. Click "Save Changes" to save the changes.');
     }
   };
 
@@ -360,7 +459,19 @@ export default function AdminInvestorRelationsPage() {
                     </div>
                     <div className="mt-2">
                       <label className="block text-xs text-gray-600 mb-1">Or enter Image URL:</label>
-                      <input type="url" name="bgImageUrl" defaultValue={getFieldValue('hero', 'bgImageUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/hero-bg.jpg" />
+                      <div className="flex gap-2">
+                        <input type="url" name="bgImageUrl" defaultValue={getFieldValue('hero', 'bgImageUrl')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/hero-bg.jpg" />
+                        {(heroImageUrl || getFieldValue('hero', 'bgImageUrl')) && (
+                          <button
+                            type="button"
+                            onClick={() => handleImageDelete('bgImageUrl')}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                            title="Delete image"
+                          >
+                            <i className="ri-delete-bin-line"></i>
+                          </button>
+                        )}
+                      </div>
                     </div>
                     {(heroImageUrl || getFieldValue('hero', 'bgImageUrl')) && (
                       <div className="mt-2">
@@ -447,7 +558,19 @@ export default function AdminInvestorRelationsPage() {
 
               {/* Documents Section */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-4">Documents</label>
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Documents</label>
+                  {formData.documents.some(doc => doc.url) && (
+                    <button
+                      type="button"
+                      onClick={handleClearAllDocuments}
+                      className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                      title="Clear all documents"
+                    >
+                      <i className="ri-delete-bin-line mr-1"></i>Clear All Documents
+                    </button>
+                  )}
+                </div>
                 <div className="space-y-4">
                   {[1, 2, 3, 4, 5].map((num) => {
                     const doc = formData.documents[num - 1] || { name: '', url: '', description: '' };
@@ -504,14 +627,24 @@ export default function AdminInvestorRelationsPage() {
                                       </p>
                                     </div>
                                   </div>
-                                  <a
-                                    href={doc.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs whitespace-nowrap"
-                                  >
-                                    <i className="ri-external-link-line mr-1"></i>View
-                                  </a>
+                                  <div className="flex items-center gap-2">
+                                    <a
+                                      href={doc.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs whitespace-nowrap"
+                                    >
+                                      <i className="ri-external-link-line mr-1"></i>View
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleFileDelete(num)}
+                                      className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-xs whitespace-nowrap"
+                                      title="Delete file"
+                                    >
+                                      <i className="ri-delete-bin-line"></i>
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             )}

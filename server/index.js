@@ -175,6 +175,71 @@ app.post('/api/upload/file', uploadFile.single('file'), (req, res) => {
   }
 });
 
+// Delete uploaded file endpoint
+app.delete('/api/upload/:category/:filename', (req, res) => {
+  try {
+    let { category, filename } = req.params;
+    
+    console.log('Delete request received:', { category, filename, rawParams: req.params });
+    
+    // Validate category
+    const allowedCategories = ['images', 'documents', 'resumes', 'photos'];
+    if (!allowedCategories.includes(category)) {
+      console.error('Invalid category:', category);
+      return res.status(400).json({ success: false, error: 'Invalid category' });
+    }
+
+    // Decode the filename in case it's URL encoded (Express automatically decodes, but handle edge cases)
+    let decodedFilename = filename;
+    try {
+      // Try decoding in case of double encoding
+      decodedFilename = decodeURIComponent(filename);
+      // Try one more time for triple encoding
+      decodedFilename = decodeURIComponent(decodedFilename);
+    } catch (e) {
+      // If decoding fails, use original
+      decodedFilename = filename;
+    }
+    
+    // Remove any path components that might have been included
+    decodedFilename = decodedFilename.split('/').pop() || decodedFilename;
+    
+    const filePath = path.join(__dirname, 'uploads', category, decodedFilename);
+    
+    console.log('Looking for file at:', filePath);
+    console.log('Decoded filename:', decodedFilename);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      // List files in directory for debugging
+      const uploadsDir = path.join(__dirname, 'uploads', category);
+      if (fs.existsSync(uploadsDir)) {
+        const files = fs.readdirSync(uploadsDir);
+        console.log('Files in directory:', files);
+        console.log('Looking for:', decodedFilename);
+        // Try case-insensitive match
+        const foundFile = files.find(f => f.toLowerCase() === decodedFilename.toLowerCase());
+        if (foundFile) {
+          console.log('Found file with different case:', foundFile);
+          const correctPath = path.join(uploadsDir, foundFile);
+          fs.unlinkSync(correctPath);
+          return res.json({ success: true, message: 'File deleted successfully', correctedFilename: foundFile });
+        }
+      }
+      console.error('File not found at:', filePath);
+      return res.status(404).json({ success: false, error: 'File not found', path: filePath, filename: decodedFilename });
+    }
+
+    // Delete the file
+    fs.unlinkSync(filePath);
+    console.log('File deleted successfully:', filePath);
+    res.json({ success: true, message: 'File deleted successfully' });
+  } catch (error) {
+    console.error('File delete error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete file', message: error.message });
+  }
+});
+
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
