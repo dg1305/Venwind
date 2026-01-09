@@ -460,7 +460,7 @@ export default function AdminInvestorRelationsPage() {
                     <div className="mt-2">
                       <label className="block text-xs text-gray-600 mb-1">Or enter Image URL:</label>
                       <div className="flex gap-2">
-                        <input type="url" name="bgImageUrl" defaultValue={getFieldValue('hero', 'bgImageUrl')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/hero-bg.jpg" />
+                        <input type="text" name="bgImageUrl" defaultValue={getFieldValue('hero', 'bgImageUrl')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/hero-bg.jpg" />
                         {(heroImageUrl || getFieldValue('hero', 'bgImageUrl')) && (
                           <button
                             type="button"

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AdminLayout, { API_BASE_URL, deleteUploadedFile } from '../components/AdminLayout';
 import { useCMSData } from '../hooks/useCMSData';
+import { normalizeImageUrl } from '../../../utils/cms';
 
 export default function AdminHomePage() {
   const [activeSection, setActiveSection] = useState('hero');
@@ -15,7 +16,12 @@ export default function AdminHomePage() {
       const formData = new FormData();
       formData.append('image', file);
       
-      const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
+      // Use relative path if API_BASE_URL is empty (works with Vite proxy)
+      const uploadUrl = API_BASE_URL 
+        ? `${API_BASE_URL}/api/upload/image`
+        : '/api/upload/image';
+      
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });
@@ -23,16 +29,40 @@ export default function AdminHomePage() {
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.imageUrl) {
-          const fullUrl = `${API_BASE_URL}${result.imageUrl}`;
+          // Construct full URL - if API_BASE_URL is empty, use relative path
+          const fullUrl = API_BASE_URL 
+            ? `${API_BASE_URL}${result.imageUrl}` 
+            : result.imageUrl;
+          
           const input = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
           if (input) {
             input.value = fullUrl;
+            // Trigger change event to update form state
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
           }
           setImageUrls(prev => ({ ...prev, [fieldName]: fullUrl }));
+          alert('Icon uploaded successfully! Click "Save Changes" to save.');
+        } else {
+          alert('Failed to upload icon: ' + (result.error || 'Unknown error'));
         }
+      } else {
+        const errorText = await response.text();
+        let errorMessage = 'Failed to upload icon. Please try again.';
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorJson.message || errorMessage;
+        } catch {
+          if (errorText) errorMessage = errorText;
+        }
+        alert(errorMessage);
+        console.error('Upload error:', errorText);
       }
     } catch (error) {
       console.error('Error uploading image:', error);
+      alert('Failed to upload icon. Please try again.');
+    } finally {
+      e.target.value = ''; // Reset file input
     }
   };
 
@@ -194,20 +224,111 @@ export default function AdminHomePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Background Video URL</label>
-                  <input
-                    type="url"
-                    name="videoUrl"
-                    defaultValue={getFieldValue('hero', 'videoUrl')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
-                    placeholder="https://example.com/video.mp4"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Background Video</label>
+                  <div className="mb-2">
+                    <label className="block text-xs text-gray-600 mb-1">Upload video from local:</label>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        try {
+                          const formData = new FormData();
+                          formData.append('video', file);
+                          
+                          const uploadUrl = API_BASE_URL 
+                            ? `${API_BASE_URL}/api/upload/video`
+                            : '/api/upload/video';
+                          
+                          const response = await fetch(uploadUrl, {
+                            method: 'POST',
+                            body: formData,
+                          });
+                          
+                          if (response.ok) {
+                            const result = await response.json();
+                            if (result.success && (result.videoUrl || result.fileUrl)) {
+                              const fullUrl = API_BASE_URL 
+                                ? `${API_BASE_URL}${result.videoUrl || result.fileUrl}` 
+                                : (result.videoUrl || result.fileUrl);
+                              const input = document.querySelector('input[name="videoUrl"]') as HTMLInputElement;
+                              if (input) {
+                                input.value = fullUrl;
+                                input.dispatchEvent(new Event('input', { bubbles: true }));
+                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                              }
+                              alert('Video uploaded successfully! Click "Save Changes" to save.');
+                            } else {
+                              alert('Failed to upload video: ' + (result.error || 'Unknown error'));
+                            }
+                          } else {
+                            const errorText = await response.text();
+                            let errorMessage = 'Failed to upload video. Please try again.';
+                            try {
+                              const errorJson = JSON.parse(errorText);
+                              errorMessage = errorJson.error || errorJson.message || errorMessage;
+                            } catch {
+                              if (errorText) errorMessage = errorText;
+                            }
+                            alert(errorMessage);
+                          }
+                        } catch (error) {
+                          console.error('Error uploading video:', error);
+                          alert('Failed to upload video: ' + (error instanceof Error ? error.message : 'Please try again.'));
+                        } finally {
+                          e.target.value = '';
+                        }
+                      }}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer"
+                    />
+                  </div>
+                  <div className="mt-2">
+                    <label className="block text-xs text-gray-600 mb-1">Or enter video URL:</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        name="videoUrl"
+                        defaultValue={getFieldValue('hero', 'videoUrl')}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+                        placeholder="https://example.com/video.mp4"
+                      />
+                      {getFieldValue('hero', 'videoUrl') && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (confirm('Remove this video?')) {
+                              const input = document.querySelector('input[name="videoUrl"]') as HTMLInputElement;
+                              if (input) {
+                                const videoUrl = input.value;
+                                if (videoUrl.includes('/uploads/')) {
+                                  try {
+                                    await deleteUploadedFile(videoUrl);
+                                  } catch (error) {
+                                    console.error('Error deleting video:', error);
+                                  }
+                                }
+                                input.value = '';
+                                input.dispatchEvent(new Event('input', { bubbles: true }));
+                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                              }
+                            }
+                          }}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                          title="Remove video"
+                        >
+                          <i className="ri-delete-bin-line"></i>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Background Image URL (fallback)</label>
                   <div className="flex gap-2">
                     <input
-                      type="url"
+                      type="text"
                       name="bgImageUrl"
                       defaultValue={getFieldValue('hero', 'bgImageUrl')}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
@@ -252,7 +373,7 @@ export default function AdminHomePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Background Image URL</label>
                   <div className="flex gap-2">
                     <input
-                      type="url"
+                      type="text"
                       name="bgImageUrl"
                       defaultValue={getFieldValue('stats', 'bgImageUrl')}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
@@ -288,6 +409,45 @@ export default function AdminHomePage() {
                     <input type="text" name="stat1Label" defaultValue={getFieldValue('stats', 'stat1Label')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="MW Installed" />
                   </div>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Stat 1 Icon</label>
+                  <div className="flex gap-2 mb-2">
+                    <input type="text" name="stat1Icon" defaultValue={getFieldValue('stats', 'stat1Icon')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Icon URL or RemixIcon class" />
+                    {getFieldValue('stats', 'stat1Icon') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm('Remove this icon?')) {
+                            const input = document.querySelector('input[name="stat1Icon"]') as HTMLInputElement;
+                            if (input) input.value = '';
+                          }
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        title="Remove icon"
+                      >
+                        <i className="ri-delete-bin-line"></i>
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    <label className="block text-xs text-gray-600 mb-1">Upload icon image (SVG, PNG, JPG):</label>
+                    <input type="file" accept="image/*,.svg" onChange={(e) => handleImageUpload(e, 'stat1Icon')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                  </div>
+                  {getFieldValue('stats', 'stat1Icon') && (
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                        {getFieldValue('stats', 'stat1Icon').startsWith('http') || getFieldValue('stats', 'stat1Icon').startsWith('/') || getFieldValue('stats', 'stat1Icon').includes('.') && !getFieldValue('stats', 'stat1Icon').startsWith('ri-') ? (
+                          <img src={getFieldValue('stats', 'stat1Icon')} alt="Icon preview" className="w-12 h-12 object-contain" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
+                            <i className={`${getFieldValue('stats', 'stat1Icon')} text-[#8DC63F] text-2xl`}></i>
+                          </div>
+                        )}
+                        <span className="text-xs text-gray-500">Current Icon</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Stat 2 Number</label>
@@ -297,6 +457,45 @@ export default function AdminHomePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Stat 2 Label</label>
                     <input type="text" name="stat2Label" defaultValue={getFieldValue('stats', 'stat2Label')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Years Experience" />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Stat 2 Icon</label>
+                  <div className="flex gap-2 mb-2">
+                    <input type="text" name="stat2Icon" defaultValue={getFieldValue('stats', 'stat2Icon')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Icon URL or RemixIcon class" />
+                    {getFieldValue('stats', 'stat2Icon') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm('Remove this icon?')) {
+                            const input = document.querySelector('input[name="stat2Icon"]') as HTMLInputElement;
+                            if (input) input.value = '';
+                          }
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        title="Remove icon"
+                      >
+                        <i className="ri-delete-bin-line"></i>
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    <label className="block text-xs text-gray-600 mb-1">Upload icon image (SVG, PNG, JPG):</label>
+                    <input type="file" accept="image/*,.svg" onChange={(e) => handleImageUpload(e, 'stat2Icon')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                  </div>
+                  {getFieldValue('stats', 'stat2Icon') && (
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                        {getFieldValue('stats', 'stat2Icon').startsWith('http') || getFieldValue('stats', 'stat2Icon').startsWith('/') || getFieldValue('stats', 'stat2Icon').includes('.') && !getFieldValue('stats', 'stat2Icon').startsWith('ri-') ? (
+                          <img src={getFieldValue('stats', 'stat2Icon')} alt="Icon preview" className="w-12 h-12 object-contain" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
+                            <i className={`${getFieldValue('stats', 'stat2Icon')} text-[#8DC63F] text-2xl`}></i>
+                          </div>
+                        )}
+                        <span className="text-xs text-gray-500">Current Icon</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -308,6 +507,45 @@ export default function AdminHomePage() {
                     <input type="text" name="stat3Label" defaultValue={getFieldValue('stats', 'stat3Label')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Countries" />
                   </div>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Stat 3 Icon</label>
+                  <div className="flex gap-2 mb-2">
+                    <input type="text" name="stat3Icon" defaultValue={getFieldValue('stats', 'stat3Icon')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Icon URL or RemixIcon class" />
+                    {getFieldValue('stats', 'stat3Icon') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm('Remove this icon?')) {
+                            const input = document.querySelector('input[name="stat3Icon"]') as HTMLInputElement;
+                            if (input) input.value = '';
+                          }
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        title="Remove icon"
+                      >
+                        <i className="ri-delete-bin-line"></i>
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    <label className="block text-xs text-gray-600 mb-1">Upload icon image (SVG, PNG, JPG):</label>
+                    <input type="file" accept="image/*,.svg" onChange={(e) => handleImageUpload(e, 'stat3Icon')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                  </div>
+                  {getFieldValue('stats', 'stat3Icon') && (
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                        {getFieldValue('stats', 'stat3Icon').startsWith('http') || getFieldValue('stats', 'stat3Icon').startsWith('/') || getFieldValue('stats', 'stat3Icon').includes('.') && !getFieldValue('stats', 'stat3Icon').startsWith('ri-') ? (
+                          <img src={getFieldValue('stats', 'stat3Icon')} alt="Icon preview" className="w-12 h-12 object-contain" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
+                            <i className={`${getFieldValue('stats', 'stat3Icon')} text-[#8DC63F] text-2xl`}></i>
+                          </div>
+                        )}
+                        <span className="text-xs text-gray-500">Current Icon</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Stat 4 Number</label>
@@ -317,6 +555,45 @@ export default function AdminHomePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Stat 4 Label</label>
                     <input type="text" name="stat4Label" defaultValue={getFieldValue('stats', 'stat4Label')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Uptime" />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Stat 4 Icon</label>
+                  <div className="flex gap-2 mb-2">
+                    <input type="text" name="stat4Icon" defaultValue={getFieldValue('stats', 'stat4Icon')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Icon URL or RemixIcon class" />
+                    {getFieldValue('stats', 'stat4Icon') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm('Remove this icon?')) {
+                            const input = document.querySelector('input[name="stat4Icon"]') as HTMLInputElement;
+                            if (input) input.value = '';
+                          }
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                        title="Remove icon"
+                      >
+                        <i className="ri-delete-bin-line"></i>
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    <label className="block text-xs text-gray-600 mb-1">Upload icon image (SVG, PNG, JPG):</label>
+                    <input type="file" accept="image/*,.svg" onChange={(e) => handleImageUpload(e, 'stat4Icon')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                  </div>
+                  {getFieldValue('stats', 'stat4Icon') && (
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                        {getFieldValue('stats', 'stat4Icon').startsWith('http') || getFieldValue('stats', 'stat4Icon').startsWith('/') || getFieldValue('stats', 'stat4Icon').includes('.') && !getFieldValue('stats', 'stat4Icon').startsWith('ri-') ? (
+                          <img src={getFieldValue('stats', 'stat4Icon')} alt="Icon preview" className="w-12 h-12 object-contain" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
+                            <i className={`${getFieldValue('stats', 'stat4Icon')} text-[#8DC63F] text-2xl`}></i>
+                          </div>
+                        )}
+                        <span className="text-xs text-gray-500">Current Icon</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors">
                   <i className="ri-save-line mr-2"></i>Save Changes
@@ -336,18 +613,13 @@ export default function AdminHomePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Section Title</label>
                   <input type="text" name="title" defaultValue={getFieldValue('differentiators', 'title')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Why Choose Us" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Feature 1 Title</label>
-                  <input type="text" name="feature1Title" defaultValue={getFieldValue('differentiators', 'feature1Title')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="German Engineering" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Feature 1 Description</label>
-                  <textarea name="feature1Desc" defaultValue={getFieldValue('differentiators', 'feature1Desc')} rows={2} maxLength={500} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Description..." />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Feature 1 Image URL</label>
-                  <div className="flex gap-2">
-                    <input type="url" name="feature1Image" defaultValue={getFieldValue('differentiators', 'feature1Image')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature1.jpg" />
+                
+                {/* Left Side Image - Main Section Image */}
+                <div className="border-t border-gray-200 pt-4 mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Left Side Image (Main Section Image)</label>
+                  <p className="text-xs text-gray-500 mb-3">This image appears on the left side of the differentiators section</p>
+                  <div className="flex gap-2 mb-2">
+                    <input type="text" name="feature1Image" defaultValue={getFieldValue('differentiators', 'feature1Image')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/image.jpg or /uploads/images/image.jpg" />
                     {hasImage('feature1Image', 'differentiators') && (
                       <button
                         type="button"
@@ -360,61 +632,98 @@ export default function AdminHomePage() {
                     )}
                   </div>
                   <div className="mt-2">
+                    <label className="block text-xs text-gray-600 mb-1">Upload image from local:</label>
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'feature1Image')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                   </div>
+                  {getFieldValue('differentiators', 'feature1Image') && (
+                    <div className="mt-3">
+                      <label className="block text-xs text-gray-600 mb-1">Current Image Preview:</label>
+                      <div className="border border-gray-200 rounded-lg p-2 bg-gray-50">
+                        <img 
+                          src={normalizeImageUrl(getFieldValue('differentiators', 'feature1Image'))} 
+                          alt="Left side image preview" 
+                          className="max-w-full h-auto max-h-48 object-contain rounded"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = '<p class="text-xs text-red-500">Failed to load image preview. Please check the image URL.</p>';
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Feature 2 Title</label>
-                  <input type="text" name="feature2Title" defaultValue={getFieldValue('differentiators', 'feature2Title')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Proven Technology" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Feature 2 Description</label>
-                  <textarea name="feature2Desc" defaultValue={getFieldValue('differentiators', 'feature2Desc')} rows={2} maxLength={500} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Description..." />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Feature 2 Image URL</label>
-                  <div className="flex gap-2">
-                    <input type="url" name="feature2Image" defaultValue={getFieldValue('differentiators', 'feature2Image')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature2.jpg" />
-                    {hasImage('feature2Image', 'differentiators') && (
-                      <button
-                        type="button"
-                        onClick={() => handleImageDelete('feature2Image')}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
-                        title="Delete image"
-                      >
-                        <i className="ri-delete-bin-line"></i>
-                      </button>
-                    )}
+
+                {/* Feature Items */}
+                <div className="border-t border-gray-200 pt-4 mt-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Feature Items</h3>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Feature 1 Title</label>
+                    <input type="text" name="feature1Title" defaultValue={getFieldValue('differentiators', 'feature1Title')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="German Engineering" />
                   </div>
-                  <div className="mt-2">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'feature2Image')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Feature 1 Description</label>
+                    <textarea name="feature1Desc" defaultValue={getFieldValue('differentiators', 'feature1Desc')} rows={2} maxLength={500} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Description..." />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Feature 3 Title</label>
-                  <input type="text" name="feature3Title" defaultValue={getFieldValue('differentiators', 'feature3Title')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Local Support" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Feature 3 Description</label>
-                  <textarea name="feature3Desc" defaultValue={getFieldValue('differentiators', 'feature3Desc')} rows={2} maxLength={500} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Description..." />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Feature 3 Image URL</label>
-                  <div className="flex gap-2">
-                    <input type="url" name="feature3Image" defaultValue={getFieldValue('differentiators', 'feature3Image')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature3.jpg" />
-                    {hasImage('feature3Image', 'differentiators') && (
-                      <button
-                        type="button"
-                        onClick={() => handleImageDelete('feature3Image')}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
-                        title="Delete image"
-                      >
-                        <i className="ri-delete-bin-line"></i>
-                      </button>
-                    )}
+                  
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Feature 2 Title</label>
+                    <input type="text" name="feature2Title" defaultValue={getFieldValue('differentiators', 'feature2Title')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Proven Technology" />
                   </div>
-                  <div className="mt-2">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'feature3Image')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Feature 2 Description</label>
+                    <textarea name="feature2Desc" defaultValue={getFieldValue('differentiators', 'feature2Desc')} rows={2} maxLength={500} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Description..." />
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Feature 2 Image URL</label>
+                    <div className="flex gap-2">
+                      <input type="text" name="feature2Image" defaultValue={getFieldValue('differentiators', 'feature2Image')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature2.jpg" />
+                      {hasImage('feature2Image', 'differentiators') && (
+                        <button
+                          type="button"
+                          onClick={() => handleImageDelete('feature2Image')}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                          title="Delete image"
+                        >
+                          <i className="ri-delete-bin-line"></i>
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-2">
+                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'feature2Image')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Feature 3 Title</label>
+                    <input type="text" name="feature3Title" defaultValue={getFieldValue('differentiators', 'feature3Title')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Local Support" />
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Feature 3 Description</label>
+                    <textarea name="feature3Desc" defaultValue={getFieldValue('differentiators', 'feature3Desc')} rows={2} maxLength={500} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Description..." />
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Feature 3 Image URL</label>
+                    <div className="flex gap-2">
+                      <input type="text" name="feature3Image" defaultValue={getFieldValue('differentiators', 'feature3Image')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature3.jpg" />
+                      {hasImage('feature3Image', 'differentiators') && (
+                        <button
+                          type="button"
+                          onClick={() => handleImageDelete('feature3Image')}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                          title="Delete image"
+                        >
+                          <i className="ri-delete-bin-line"></i>
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-2">
+                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'feature3Image')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                    </div>
                   </div>
                 </div>
                 <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors">
@@ -436,23 +745,32 @@ export default function AdminHomePage() {
                   <input type="text" name="companyName" defaultValue={getFieldValue('header', 'companyName')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="VenWind Refex" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo Image URL (optional)</label>
-                  <div className="flex gap-2">
-                    <input type="url" name="logoUrl" defaultValue={getFieldValue('header', 'logoUrl')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/logo.png" />
-                    {hasImage('logoUrl', 'header') && (
-                      <button
-                        type="button"
-                        onClick={() => handleImageDelete('logoUrl')}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
-                        title="Delete image"
-                      >
-                        <i className="ri-delete-bin-line"></i>
-                      </button>
-                    )}
-                  </div>
-                  <div className="mt-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo Image</label>
+                  <div className="mb-2">
+                    <label className="block text-xs text-gray-600 mb-1">Upload logo from local:</label>
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'logoUrl')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                   </div>
+                  <div className="mt-2">
+                    <label className="block text-xs text-gray-600 mb-1">Or enter image URL:</label>
+                    <div className="flex gap-2">
+                      <input type="text" name="logoUrl" defaultValue={getFieldValue('header', 'logoUrl')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/logo.png" />
+                      {hasImage('logoUrl', 'header') && (
+                        <button
+                          type="button"
+                          onClick={() => handleImageDelete('logoUrl')}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                          title="Delete image"
+                        >
+                          <i className="ri-delete-bin-line"></i>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {getFieldValue('header', 'logoUrl') && (
+                    <div className="mt-2">
+                      <img src={getFieldValue('header', 'logoUrl')} alt="Logo preview" className="h-16 w-auto object-contain border border-gray-200 rounded-lg p-2" />
+                    </div>
+                  )}
                 </div>
                 <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors">
                   <i className="ri-save-line mr-2"></i>Save Changes

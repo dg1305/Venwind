@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
+import { normalizeImageUrl } from '../../../utils/cms';
+import propellerIcon from '@/assets/propeller-1.svg';
+import diameterIcon from '@/assets/diameter-5.svg';
+import thunderboltIcon from '@/assets/thunderbolt.svg';
+import planetEarthIcon from '@/assets/planet-earth.svg';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 interface StatsData {
   stat1Number?: string;
   stat1Label?: string;
+  stat1Icon?: string;
   stat2Number?: string;
   stat2Label?: string;
+  stat2Icon?: string;
   stat3Number?: string;
   stat3Label?: string;
+  stat3Icon?: string;
   stat4Number?: string;
   stat4Label?: string;
+  stat4Icon?: string;
   bgImageUrl?: string;
 }
 
@@ -24,12 +33,12 @@ export default function StatsSection() {
     countries: 0
   });
   const [statsData, setStatsData] = useState<StatsData>({});
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   // Default stats
   const defaultStats = [
     {
-      icon: 'https://venwindrefex.com/wp-content/uploads/2025/01/propeller-1.svg',
+      icon: propellerIcon,
       value: 5.3,
       unit: 'MW',
       key: 'power',
@@ -38,7 +47,7 @@ export default function StatsSection() {
       delay: 0
     },
     {
-      icon: 'https://venwindrefex.com/wp-content/uploads/2025/01/diameter-5.svg',
+      icon: diameterIcon,
       value: 183.4,
       unit: 'm',
       key: 'diameter',
@@ -47,7 +56,7 @@ export default function StatsSection() {
       delay: 100
     },
     {
-      icon: 'https://venwindrefex.com/wp-content/uploads/2025/01/thunderbolt.svg',
+      icon: thunderboltIcon,
       value: 128,
       unit: '+ GW',
       key: 'operational',
@@ -56,7 +65,7 @@ export default function StatsSection() {
       delay: 200
     },
     {
-      icon: 'https://venwindrefex.com/wp-content/uploads/2025/01/planet-earth.svg',
+      icon: planetEarthIcon,
       value: 38,
       unit: '+',
       key: 'countries',
@@ -69,8 +78,8 @@ export default function StatsSection() {
   // Build stats from API data or use defaults
   const stats = statsData.stat1Number ? [
     {
-      icon: 'https://venwindrefex.com/wp-content/uploads/2025/01/propeller-1.svg',
-      value: parseFloat(statsData.stat1Number) || 0,
+      icon: statsData.stat1Icon || propellerIcon,
+      value: parseFloat(statsData.stat1Number || '0') || 0,
       unit: '',
       key: 'power',
       description: statsData.stat1Label || '',
@@ -78,8 +87,8 @@ export default function StatsSection() {
       delay: 0
     },
     {
-      icon: 'https://venwindrefex.com/wp-content/uploads/2025/01/diameter-5.svg',
-      value: parseFloat(statsData.stat2Number) || 0,
+      icon: statsData.stat2Icon || diameterIcon,
+      value: parseFloat(statsData.stat2Number || '0') || 0,
       unit: '',
       key: 'diameter',
       description: statsData.stat2Label || '',
@@ -87,8 +96,8 @@ export default function StatsSection() {
       delay: 100
     },
     {
-      icon: 'https://venwindrefex.com/wp-content/uploads/2025/01/thunderbolt.svg',
-      value: parseFloat(statsData.stat3Number) || 0,
+      icon: statsData.stat3Icon || thunderboltIcon,
+      value: parseFloat(statsData.stat3Number || '0') || 0,
       unit: '',
       key: 'operational',
       description: statsData.stat3Label || '',
@@ -96,8 +105,8 @@ export default function StatsSection() {
       delay: 200
     },
     {
-      icon: 'https://venwindrefex.com/wp-content/uploads/2025/01/planet-earth.svg',
-      value: parseFloat(statsData.stat4Number) || 0,
+      icon: statsData.stat4Icon || planetEarthIcon,
+      value: parseFloat(statsData.stat4Number || '0') || 0,
       unit: '',
       key: 'countries',
       description: statsData.stat4Label || '',
@@ -206,7 +215,7 @@ export default function StatsSection() {
       className="bg-white py-12 lg:py-16" 
       ref={sectionRef}
       style={statsData.bgImageUrl ? { 
-        backgroundImage: `url(${statsData.bgImageUrl})`,
+        backgroundImage: `url(${normalizeImageUrl(statsData.bgImageUrl)})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       } : {}}
@@ -221,11 +230,47 @@ export default function StatsSection() {
               data-aos-delay={stat.delay}
             >
               <div className="flex justify-center mb-6">
-                <img 
-                  src={stat.icon} 
-                  alt={stat.alt} 
-                  className="w-20 h-20"
-                />
+                {(() => {
+                  const iconUrl = typeof stat.icon === 'string' ? stat.icon : String(stat.icon || '');
+                  const isImageUrl = iconUrl && iconUrl.trim() && !iconUrl.startsWith('ri-') && (iconUrl.startsWith('http') || iconUrl.startsWith('/') || iconUrl.includes('.'));
+                  
+                  if (isImageUrl) {
+                    return (
+                      <img 
+                        src={normalizeImageUrl(iconUrl)} 
+                        alt={stat.alt} 
+                        className="w-20 h-20 object-contain"
+                        onError={(e) => {
+                          // Fallback to RemixIcon if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent && !parent.querySelector('i')) {
+                            const iconElement = document.createElement('i');
+                            iconElement.className = `ri-image-line text-[#8DC63F] text-5xl`;
+                            parent.appendChild(iconElement);
+                          }
+                        }}
+                      />
+                    );
+                  } else {
+                    return (
+                      <div className="w-20 h-20 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
+                        {iconUrl && iconUrl.startsWith('ri-') ? (
+                          <i className={`${iconUrl} text-[#8DC63F] text-5xl`}></i>
+                        ) : iconUrl ? (
+                          <img 
+                            src={iconUrl} 
+                            alt={stat.alt} 
+                            className="w-20 h-20 object-contain"
+                          />
+                        ) : (
+                          <i className="ri-image-line text-[#8DC63F] text-5xl"></i>
+                        )}
+                      </div>
+                    );
+                  }
+                })()}
               </div>
               <div className="text-gray-900 text-5xl font-bold mb-4">
                 {getDisplayValue(stat)}{stat.unit}

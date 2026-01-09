@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 interface FooterData {
+  logoUrl?: string;
   description?: string;
   email?: string;
   phone?: string;
@@ -69,11 +70,19 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
           {/* Logo */}
           <div data-aos="fade-up" data-aos-delay="0">
-            <img 
-              src="https://venwindrefex.com/wp-content/uploads/2023/11/Venwind_Logo_Final-white.png" 
-              alt="Venwind Refex" 
-              className="h-12 w-auto mb-6"
-            />
+            {footerData.logoUrl ? (
+              <img 
+                src={footerData.logoUrl} 
+                alt="Venwind Refex" 
+                className="h-12 w-auto mb-6"
+              />
+            ) : (
+              <img 
+                src="https://venwindrefex.com/wp-content/uploads/2023/11/Venwind_Logo_Final-white.png" 
+                alt="Venwind Refex" 
+                className="h-12 w-auto mb-6"
+              />
+            )}
             {footerData.description && (
               <p className="text-gray-300 text-sm leading-relaxed">{footerData.description}</p>
             )}

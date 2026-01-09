@@ -21,12 +21,27 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter to only allow images
+// File filter to only allow images (including SVG)
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/svg+xml',
+    'image/svg'
+  ];
+  
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  
+  if (file.mimetype.startsWith('image/') || 
+      allowedMimeTypes.includes(file.mimetype) || 
+      allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed!'), false);
+    cb(new Error('Only image files are allowed (JPG, PNG, GIF, WEBP, SVG)!'), false);
   }
 };
 

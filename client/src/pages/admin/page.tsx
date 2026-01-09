@@ -81,7 +81,12 @@ export default function AdminPage() {
       const formData = new FormData();
       formData.append('image', file);
       
-      const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
+      // Use relative path if API_BASE_URL is empty (works with Vite proxy)
+      const uploadUrl = API_BASE_URL 
+        ? `${API_BASE_URL}/api/upload/image`
+        : '/api/upload/image';
+      
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });
@@ -89,39 +94,34 @@ export default function AdminPage() {
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.imageUrl) {
+          // Construct full URL - if API_BASE_URL is empty, use relative path
+          const fullUrl = API_BASE_URL 
+            ? `${API_BASE_URL}${result.imageUrl}` 
+            : result.imageUrl;
+          
           // Update the input field with the image URL
           const input = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
           if (input) {
-            input.value = `${API_BASE_URL}${result.imageUrl}`;
+            input.value = fullUrl;
+            // Trigger change event to update form state
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
           }
+          alert('Image uploaded successfully! Click "Save Changes" to save.');
+        } else {
+          alert('Failed to upload image: ' + (result.error || 'Unknown error'));
         }
       } else {
-        console.error('Image upload failed');
-        // Fallback to base64 if upload fails
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result as string;
-          const input = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
-          if (input) {
-            input.value = base64String;
-          }
-        };
-        reader.readAsDataURL(file);
+        const errorText = await response.text();
+        alert('Failed to upload image. Please try again.');
+        console.error('Upload error:', errorText);
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      // Fallback to base64
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        const input = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
-        if (input) {
-          input.value = base64String;
-        }
-      };
-      reader.readAsDataURL(file);
+      alert('Failed to upload image. Please try again.');
     } finally {
       setUploadingImage(false);
+      e.target.value = ''; // Reset file input
     }
   };
 
@@ -353,32 +353,159 @@ export default function AdminPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Background Video URL</label>
-                          <input
-                            type="url"
-                            name="videoUrl"
-                            defaultValue={getFieldValue('home', 'hero', 'videoUrl')}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
-                            placeholder="https://example.com/video.mp4"
-                          />
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Background Video</label>
+                          <div className="mb-2">
+                            <label className="block text-xs text-gray-600 mb-1">Upload video from local:</label>
+                            <input
+                              type="file"
+                              accept="video/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                
+                                try {
+                                  const formData = new FormData();
+                                  formData.append('video', file);
+                                  
+                                  const uploadUrl = API_BASE_URL 
+                                    ? `${API_BASE_URL}/api/upload/video`
+                                    : '/api/upload/video';
+                                  
+                                  const response = await fetch(uploadUrl, {
+                                    method: 'POST',
+                                    body: formData,
+                                  });
+                                  
+                                  if (response.ok) {
+                                    const result = await response.json();
+                                    if (result.success && (result.videoUrl || result.fileUrl)) {
+                                      const fullUrl = API_BASE_URL 
+                                        ? `${API_BASE_URL}${result.videoUrl || result.fileUrl}` 
+                                        : (result.videoUrl || result.fileUrl);
+                                      const input = document.querySelector('input[name="videoUrl"]') as HTMLInputElement;
+                                      if (input) {
+                                        input.value = fullUrl;
+                                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                                      }
+                                      alert('Video uploaded successfully! Click "Save Changes" to save.');
+                                    } else {
+                                      alert('Failed to upload video: ' + (result.error || 'Unknown error'));
+                                    }
+                                  } else {
+                                    const errorText = await response.text();
+                                    let errorMessage = 'Failed to upload video. Please try again.';
+                                    try {
+                                      const errorJson = JSON.parse(errorText);
+                                      errorMessage = errorJson.error || errorJson.message || errorMessage;
+                                    } catch {
+                                      if (errorText) errorMessage = errorText;
+                                    }
+                                    alert(errorMessage);
+                                  }
+                                } catch (error) {
+                                  console.error('Error uploading video:', error);
+                                  alert('Failed to upload video: ' + (error instanceof Error ? error.message : 'Please try again.'));
+                                } finally {
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer"
+                            />
+                          </div>
+                          <div className="mt-2">
+                            <label className="block text-xs text-gray-600 mb-1">Or enter video URL:</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                name="videoUrl"
+                                defaultValue={getFieldValue('home', 'hero', 'videoUrl')}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+                                placeholder="https://example.com/video.mp4"
+                              />
+                              {getFieldValue('home', 'hero', 'videoUrl') && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (confirm('Remove this video?')) {
+                                      const input = document.querySelector('input[name="videoUrl"]') as HTMLInputElement;
+                                      if (input) {
+                                        const videoUrl = input.value;
+                                        // If it's an uploaded file, try to delete it
+                                        if (videoUrl.includes('/uploads/')) {
+                                          try {
+                                            const { deleteUploadedFile } = await import('./components/AdminLayout');
+                                            await deleteUploadedFile(videoUrl);
+                                          } catch (error) {
+                                            console.error('Error deleting video:', error);
+                                          }
+                                        }
+                                        input.value = '';
+                                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                                      }
+                                    }
+                                  }}
+                                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                                  title="Remove video"
+                                >
+                                  <i className="ri-delete-bin-line"></i>
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Background Image URL (fallback)</label>
-                          <input
-                            type="url"
-                            name="bgImageUrl"
-                            defaultValue={getFieldValue('home', 'hero', 'bgImageUrl')}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
-                            placeholder="https://example.com/image.jpg"
-                          />
-                          <div className="mt-2">
-                            <label className="block text-sm text-gray-600 mb-1">Or upload image:</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Background Image (fallback)</label>
+                          <div className="mb-2">
+                            <label className="block text-xs text-gray-600 mb-1">Upload image from local:</label>
                             <input
                               type="file"
                               accept="image/*"
                               onChange={(e) => handleImageUpload(e, 'bgImageUrl')}
                               className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer"
                             />
+                          </div>
+                          <div className="mt-2">
+                            <label className="block text-xs text-gray-600 mb-1">Or enter image URL:</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                name="bgImageUrl"
+                                defaultValue={getFieldValue('home', 'hero', 'bgImageUrl')}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+                                placeholder="https://example.com/image.jpg"
+                              />
+                              {getFieldValue('home', 'hero', 'bgImageUrl') && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (confirm('Remove this image?')) {
+                                      const input = document.querySelector('input[name="bgImageUrl"]') as HTMLInputElement;
+                                      if (input) {
+                                        const imageUrl = input.value;
+                                        // If it's an uploaded file, try to delete it
+                                        if (imageUrl.includes('/uploads/')) {
+                                          try {
+                                            const { deleteUploadedFile } = await import('./components/AdminLayout');
+                                            await deleteUploadedFile(imageUrl);
+                                          } catch (error) {
+                                            console.error('Error deleting image:', error);
+                                          }
+                                        }
+                                        input.value = '';
+                                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                                      }
+                                    }
+                                  }}
+                                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                                  title="Remove image"
+                                >
+                                  <i className="ri-delete-bin-line"></i>
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors whitespace-nowrap">
@@ -396,21 +523,56 @@ export default function AdminPage() {
                     <form onSubmit={(e) => handleSubmit(e, 'home', 'stats')} id="home-stats-form">
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Background Image URL</label>
-                          <input
-                            type="url"
-                            name="bgImageUrl"
-                            defaultValue={getFieldValue('home', 'stats', 'bgImageUrl')}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
-                            placeholder="https://example.com/stats-bg.jpg"
-                          />
-                          <div className="mt-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Background Image</label>
+                          <div className="mb-2">
+                            <label className="block text-xs text-gray-600 mb-1">Upload image from local:</label>
                             <input
                               type="file"
                               accept="image/*"
                               onChange={(e) => handleImageUpload(e, 'bgImageUrl')}
                               className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer"
                             />
+                          </div>
+                          <div className="mt-2">
+                            <label className="block text-xs text-gray-600 mb-1">Or enter image URL:</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                name="bgImageUrl"
+                                defaultValue={getFieldValue('home', 'stats', 'bgImageUrl')}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+                                placeholder="https://example.com/stats-bg.jpg"
+                              />
+                              {getFieldValue('home', 'stats', 'bgImageUrl') && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (confirm('Remove this image?')) {
+                                      const input = document.querySelector('input[name="bgImageUrl"]') as HTMLInputElement;
+                                      if (input) {
+                                        const imageUrl = input.value;
+                                        // If it's an uploaded file, try to delete it
+                                        if (imageUrl.includes('/uploads/')) {
+                                          try {
+                                            const { deleteUploadedFile } = await import('./components/AdminLayout');
+                                            await deleteUploadedFile(imageUrl);
+                                          } catch (error) {
+                                            console.error('Error deleting image:', error);
+                                          }
+                                        }
+                                        input.value = '';
+                                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                                      }
+                                    }
+                                  }}
+                                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                                  title="Remove image"
+                                >
+                                  <i className="ri-delete-bin-line"></i>
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -423,6 +585,45 @@ export default function AdminPage() {
                             <input type="text" name="stat1Label" defaultValue={getFieldValue('home', 'stats', 'stat1Label')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="MW Installed" />
                           </div>
                         </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Stat 1 Icon</label>
+                          <div className="flex gap-2 mb-2">
+                            <input type="text" name="stat1Icon" defaultValue={getFieldValue('home', 'stats', 'stat1Icon')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Icon URL or RemixIcon class" />
+                            {getFieldValue('home', 'stats', 'stat1Icon') && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (confirm('Remove this icon?')) {
+                                    const input = document.querySelector('input[name="stat1Icon"]') as HTMLInputElement;
+                                    if (input) input.value = '';
+                                  }
+                                }}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                                title="Remove icon"
+                              >
+                                <i className="ri-delete-bin-line"></i>
+                              </button>
+                            )}
+                          </div>
+                          <div className="mt-2">
+                            <label className="block text-xs text-gray-600 mb-1">Upload icon image (SVG, PNG, JPG):</label>
+                            <input type="file" accept="image/*,.svg" onChange={(e) => handleImageUpload(e, 'stat1Icon')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                          </div>
+                          {getFieldValue('home', 'stats', 'stat1Icon') && (
+                            <div className="mt-2">
+                              <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                                {getFieldValue('home', 'stats', 'stat1Icon').startsWith('http') || getFieldValue('home', 'stats', 'stat1Icon').startsWith('/') || (getFieldValue('home', 'stats', 'stat1Icon').includes('.') && !getFieldValue('home', 'stats', 'stat1Icon').startsWith('ri-')) ? (
+                                  <img src={getFieldValue('home', 'stats', 'stat1Icon')} alt="Icon preview" className="w-12 h-12 object-contain" />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
+                                    <i className={`${getFieldValue('home', 'stats', 'stat1Icon')} text-[#8DC63F] text-2xl`}></i>
+                                  </div>
+                                )}
+                                <span className="text-xs text-gray-500">Current Icon</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Stat 2 Number</label>
@@ -432,6 +633,45 @@ export default function AdminPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Stat 2 Label</label>
                             <input type="text" name="stat2Label" defaultValue={getFieldValue('home', 'stats', 'stat2Label')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Years Experience" />
                           </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Stat 2 Icon</label>
+                          <div className="flex gap-2 mb-2">
+                            <input type="text" name="stat2Icon" defaultValue={getFieldValue('home', 'stats', 'stat2Icon')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Icon URL or RemixIcon class" />
+                            {getFieldValue('home', 'stats', 'stat2Icon') && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (confirm('Remove this icon?')) {
+                                    const input = document.querySelector('input[name="stat2Icon"]') as HTMLInputElement;
+                                    if (input) input.value = '';
+                                  }
+                                }}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                                title="Remove icon"
+                              >
+                                <i className="ri-delete-bin-line"></i>
+                              </button>
+                            )}
+                          </div>
+                          <div className="mt-2">
+                            <label className="block text-xs text-gray-600 mb-1">Upload icon image (SVG, PNG, JPG):</label>
+                            <input type="file" accept="image/*,.svg" onChange={(e) => handleImageUpload(e, 'stat2Icon')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                          </div>
+                          {getFieldValue('home', 'stats', 'stat2Icon') && (
+                            <div className="mt-2">
+                              <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                                {getFieldValue('home', 'stats', 'stat2Icon').startsWith('http') || getFieldValue('home', 'stats', 'stat2Icon').startsWith('/') || (getFieldValue('home', 'stats', 'stat2Icon').includes('.') && !getFieldValue('home', 'stats', 'stat2Icon').startsWith('ri-')) ? (
+                                  <img src={getFieldValue('home', 'stats', 'stat2Icon')} alt="Icon preview" className="w-12 h-12 object-contain" />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
+                                    <i className={`${getFieldValue('home', 'stats', 'stat2Icon')} text-[#8DC63F] text-2xl`}></i>
+                                  </div>
+                                )}
+                                <span className="text-xs text-gray-500">Current Icon</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
@@ -443,6 +683,45 @@ export default function AdminPage() {
                             <input type="text" name="stat3Label" defaultValue={getFieldValue('home', 'stats', 'stat3Label')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Countries" />
                           </div>
                         </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Stat 3 Icon</label>
+                          <div className="flex gap-2 mb-2">
+                            <input type="text" name="stat3Icon" defaultValue={getFieldValue('home', 'stats', 'stat3Icon')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Icon URL or RemixIcon class" />
+                            {getFieldValue('home', 'stats', 'stat3Icon') && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (confirm('Remove this icon?')) {
+                                    const input = document.querySelector('input[name="stat3Icon"]') as HTMLInputElement;
+                                    if (input) input.value = '';
+                                  }
+                                }}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                                title="Remove icon"
+                              >
+                                <i className="ri-delete-bin-line"></i>
+                              </button>
+                            )}
+                          </div>
+                          <div className="mt-2">
+                            <label className="block text-xs text-gray-600 mb-1">Upload icon image (SVG, PNG, JPG):</label>
+                            <input type="file" accept="image/*,.svg" onChange={(e) => handleImageUpload(e, 'stat3Icon')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                          </div>
+                          {getFieldValue('home', 'stats', 'stat3Icon') && (
+                            <div className="mt-2">
+                              <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                                {getFieldValue('home', 'stats', 'stat3Icon').startsWith('http') || getFieldValue('home', 'stats', 'stat3Icon').startsWith('/') || (getFieldValue('home', 'stats', 'stat3Icon').includes('.') && !getFieldValue('home', 'stats', 'stat3Icon').startsWith('ri-')) ? (
+                                  <img src={getFieldValue('home', 'stats', 'stat3Icon')} alt="Icon preview" className="w-12 h-12 object-contain" />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-full bg-[#8DC63F]/10 flex items-center justify-center">
+                                    <i className={`${getFieldValue('home', 'stats', 'stat3Icon')} text-[#8DC63F] text-2xl`}></i>
+                                  </div>
+                                )}
+                                <span className="text-xs text-gray-500">Current Icon</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Stat 4 Number</label>
@@ -451,6 +730,31 @@ export default function AdminPage() {
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Stat 4 Label</label>
                             <input type="text" name="stat4Label" defaultValue={getFieldValue('home', 'stats', 'stat4Label')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Uptime" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Stat 4 Icon</label>
+                          <div className="flex gap-2 mb-2">
+                            <input type="text" name="stat4Icon" defaultValue={getFieldValue('home', 'stats', 'stat4Icon')} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Icon URL or RemixIcon class" />
+                            {getFieldValue('home', 'stats', 'stat4Icon') && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (confirm('Remove this icon?')) {
+                                    const input = document.querySelector('input[name="stat4Icon"]') as HTMLInputElement;
+                                    if (input) input.value = '';
+                                  }
+                                }}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                                title="Remove icon"
+                              >
+                                <i className="ri-delete-bin-line"></i>
+                              </button>
+                            )}
+                          </div>
+                          <div className="mt-2">
+                            <label className="block text-xs text-gray-600 mb-1">Upload icon image:</label>
+                            <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'stat4Icon')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                           </div>
                         </div>
                         <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors whitespace-nowrap">
@@ -481,8 +785,9 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Feature 1 Image URL</label>
-                          <input type="url" name="feature1Image" defaultValue={getFieldValue('home', 'differentiators', 'feature1Image')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature1.jpg" />
+                          <input type="text" name="feature1Image" defaultValue={getFieldValue('home', 'differentiators', 'feature1Image')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature1.jpg" />
                           <div className="mt-2">
+                            <label className="block text-sm text-gray-600 mb-1">Or upload image:</label>
                             <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'feature1Image')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                           </div>
                         </div>
@@ -496,8 +801,9 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Feature 2 Image URL</label>
-                          <input type="url" name="feature2Image" defaultValue={getFieldValue('home', 'differentiators', 'feature2Image')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature2.jpg" />
+                          <input type="text" name="feature2Image" defaultValue={getFieldValue('home', 'differentiators', 'feature2Image')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature2.jpg" />
                           <div className="mt-2">
+                            <label className="block text-sm text-gray-600 mb-1">Or upload image:</label>
                             <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'feature2Image')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                           </div>
                         </div>
@@ -511,8 +817,9 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Feature 3 Image URL</label>
-                          <input type="url" name="feature3Image" defaultValue={getFieldValue('home', 'differentiators', 'feature3Image')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature3.jpg" />
+                          <input type="text" name="feature3Image" defaultValue={getFieldValue('home', 'differentiators', 'feature3Image')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/feature3.jpg" />
                           <div className="mt-2">
+                            <label className="block text-sm text-gray-600 mb-1">Or upload image:</label>
                             <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'feature3Image')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                           </div>
                         </div>
@@ -535,11 +842,20 @@ export default function AdminPage() {
                           <input type="text" name="companyName" defaultValue={getFieldValue('home', 'header', 'companyName')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="VenWind Refex" />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Logo Image URL (optional)</label>
-                          <input type="url" name="logoUrl" defaultValue={getFieldValue('home', 'header', 'logoUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/logo.png" />
-                          <div className="mt-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Logo Image</label>
+                          <div className="mb-2">
+                            <label className="block text-xs text-gray-600 mb-1">Upload logo from local:</label>
                             <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'logoUrl')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                           </div>
+                          <div className="mt-2">
+                            <label className="block text-xs text-gray-600 mb-1">Or enter image URL:</label>
+                            <input type="text" name="logoUrl" defaultValue={getFieldValue('home', 'header', 'logoUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/logo.png" />
+                          </div>
+                          {getFieldValue('home', 'header', 'logoUrl') && (
+                            <div className="mt-2">
+                              <img src={getFieldValue('home', 'header', 'logoUrl')} alt="Logo preview" className="h-16 w-auto object-contain border border-gray-200 rounded-lg p-2" />
+                            </div>
+                          )}
                         </div>
                         <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors whitespace-nowrap">
                           <i className="ri-save-line mr-2"></i>Save Changes
@@ -555,6 +871,14 @@ export default function AdminPage() {
                     <h2 className="text-xl font-bold text-gray-900 mb-4">Footer</h2>
                     <form onSubmit={(e) => handleSubmit(e, 'home', 'footer')} id="home-footer-form">
                       <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Footer Logo URL</label>
+                          <input type="text" name="logoUrl" defaultValue={getFieldValue('home', 'footer', 'logoUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/footer-logo.png" />
+                          <div className="mt-2">
+                            <label className="block text-sm text-gray-600 mb-1">Or upload logo:</label>
+                            <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'logoUrl')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                          </div>
+                        </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Company Description</label>
                           <textarea name="description" defaultValue={getFieldValue('home', 'footer', 'description')} rows={3} maxLength={500} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="Leading manufacturer of wind turbines..." />
@@ -902,7 +1226,28 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Brochure PDF URL</label>
-                          <input type="url" name="pdfUrl" defaultValue={getFieldValue('products', 'brochure', 'pdfUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/brochure.pdf" />
+                          <input type="text" name="pdfUrl" defaultValue={getFieldValue('products', 'brochure', 'pdfUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/brochure.pdf" />
+                          <div className="mt-2">
+                            <label className="block text-sm text-gray-600 mb-1">Or upload PDF file:</label>
+                            <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              const uploadUrl = API_BASE_URL ? `${API_BASE_URL}/api/upload/file` : '/api/upload/file';
+                              fetch(uploadUrl, {
+                                method: 'POST',
+                                body: formData,
+                              }).then(res => res.json()).then(result => {
+                                if (result.success && result.fileUrl) {
+                                  const fullUrl = API_BASE_URL ? `${API_BASE_URL}${result.fileUrl}` : result.fileUrl;
+                                  const input = document.querySelector('input[name="pdfUrl"]') as HTMLInputElement;
+                                  if (input) input.value = fullUrl;
+                                  alert('File uploaded successfully!');
+                                }
+                              });
+                            }} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
+                          </div>
                         </div>
                         <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors whitespace-nowrap">
                           <i className="ri-save-line mr-2"></i>Save Changes
@@ -1326,7 +1671,7 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Google Maps Embed URL</label>
-                          <input type="url" name="mapUrl" defaultValue={getFieldValue('careers', 'map', 'mapUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.google.com/maps/embed?..." />
+                          <input type="text" name="mapUrl" defaultValue={getFieldValue('careers', 'map', 'mapUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.google.com/maps/embed?..." />
                         </div>
                         <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors whitespace-nowrap">
                           <i className="ri-save-line mr-2"></i>Save Changes
@@ -1458,7 +1803,7 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Google Maps Embed URL</label>
-                          <input type="url" name="mapUrl" defaultValue={getFieldValue('contact', 'map', 'mapUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.google.com/maps/embed?..." />
+                          <input type="text" name="mapUrl" defaultValue={getFieldValue('contact', 'map', 'mapUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.google.com/maps/embed?..." />
                         </div>
                         <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors whitespace-nowrap">
                           <i className="ri-save-line mr-2"></i>Save Changes

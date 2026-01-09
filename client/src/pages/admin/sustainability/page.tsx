@@ -127,7 +127,7 @@ export default function AdminSustainabilityPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Background Image URL</label>
-                  <input type="url" name="bgImageUrl" defaultValue={getFieldValue('hero', 'bgImageUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/hero-bg.jpg" />
+                  <input type="text" name="bgImageUrl" defaultValue={getFieldValue('hero', 'bgImageUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/hero-bg.jpg" />
                   <div className="mt-2">
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'bgImageUrl')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                   </div>
@@ -172,7 +172,7 @@ export default function AdminSustainabilityPage() {
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">Image URL</label>
-                          <input type="url" name={`commitment_${num}_image`} defaultValue={item.image} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent text-sm" placeholder="https://example.com/image.jpg" />
+                          <input type="text" name={`commitment_${num}_image`} defaultValue={item.image} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent text-sm" placeholder="https://example.com/image.jpg" />
                           <div className="mt-2">
                             <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, `commitment_${num}_image`)} className="w-full text-xs text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                           </div>
@@ -210,7 +210,7 @@ export default function AdminSustainabilityPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Background Image URL</label>
-                  <input type="url" name="bgImageUrl" defaultValue={getFieldValue('future-goals', 'bgImageUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/bg-image.jpg" />
+                  <input type="text" name="bgImageUrl" defaultValue={getFieldValue('future-goals', 'bgImageUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/bg-image.jpg" />
                   <div className="mt-2">
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'bgImageUrl')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                   </div>

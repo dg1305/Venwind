@@ -114,7 +114,7 @@ export default function AdminContactPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Background Image URL</label>
-                  <input type="url" name="bgImageUrl" defaultValue={getFieldValue('hero', 'bgImageUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/hero-bg.jpg" />
+                  <input type="text" name="bgImageUrl" defaultValue={getFieldValue('hero', 'bgImageUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://example.com/hero-bg.jpg" />
                   <div className="mt-2">
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'bgImageUrl')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#8DC63F] file:text-white hover:file:bg-[#7AB62F] file:cursor-pointer" />
                   </div>
@@ -165,23 +165,23 @@ export default function AdminContactPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Facebook URL</label>
-                    <input type="url" name="facebookUrl" defaultValue={getFieldValue('contact-info', 'facebookUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.facebook.com/..." />
+                    <input type="text" name="facebookUrl" defaultValue={getFieldValue('contact-info', 'facebookUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.facebook.com/..." />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Twitter URL</label>
-                    <input type="url" name="twitterUrl" defaultValue={getFieldValue('contact-info', 'twitterUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://x.com/..." />
+                    <input type="text" name="twitterUrl" defaultValue={getFieldValue('contact-info', 'twitterUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://x.com/..." />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn URL</label>
-                    <input type="url" name="linkedinUrl" defaultValue={getFieldValue('contact-info', 'linkedinUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.linkedin.com/..." />
+                    <input type="text" name="linkedinUrl" defaultValue={getFieldValue('contact-info', 'linkedinUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.linkedin.com/..." />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Instagram URL</label>
-                    <input type="url" name="instagramUrl" defaultValue={getFieldValue('contact-info', 'instagramUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.instagram.com/..." />
+                    <input type="text" name="instagramUrl" defaultValue={getFieldValue('contact-info', 'instagramUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.instagram.com/..." />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">YouTube URL</label>
-                    <input type="url" name="youtubeUrl" defaultValue={getFieldValue('contact-info', 'youtubeUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.youtube.com/..." />
+                    <input type="text" name="youtubeUrl" defaultValue={getFieldValue('contact-info', 'youtubeUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://www.youtube.com/..." />
                   </div>
                 </div>
                 <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors">
@@ -242,7 +242,7 @@ export default function AdminContactPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Google Maps Embed URL</label>
-                  <input type="url" name="mapUrl" defaultValue={getFieldValue('map', 'mapUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://maps.google.com/maps?..." />
+                  <input type="text" name="mapUrl" defaultValue={getFieldValue('map', 'mapUrl')} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent" placeholder="https://maps.google.com/maps?..." />
                 </div>
                 <button type="submit" className="w-full px-6 py-3 bg-[#8DC63F] text-white rounded-lg hover:bg-[#7AB62F] transition-colors">
                   <i className="ri-save-line mr-2"></i>Save Changes

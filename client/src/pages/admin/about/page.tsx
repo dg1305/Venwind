@@ -139,7 +139,7 @@ export default function AdminAboutPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Background Image URL</label>
                   <input
-                    type="url"
+                    type="text"
                     name="bgImageUrl"
                     defaultValue={getFieldValue('hero', 'bgImageUrl')}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
@@ -192,7 +192,7 @@ export default function AdminAboutPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Main Image URL</label>
                   <input
-                    type="url"
+                    type="text"
                     name="imageUrl"
                     defaultValue={getFieldValue('introduction', 'imageUrl')}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
@@ -237,7 +237,7 @@ export default function AdminAboutPage() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Mission Image URL</label>
                       <input
-                        type="url"
+                        type="text"
                         name="missionImageUrl"
                         defaultValue={getFieldValue('vision', 'missionImageUrl')}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
@@ -284,7 +284,7 @@ export default function AdminAboutPage() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Vision Image URL</label>
                       <input
-                        type="url"
+                        type="text"
                         name="visionImageUrl"
                         defaultValue={getFieldValue('vision', 'visionImageUrl')}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"

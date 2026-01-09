@@ -175,6 +175,58 @@ app.post('/api/upload/file', uploadFile.single('file'), (req, res) => {
   }
 });
 
+// Video upload endpoint
+const multer = require('multer');
+const uploadVideo = require('./middlewares/uploadVideo');
+app.post('/api/upload/video', (req, res) => {
+  uploadVideo.single('video')(req, res, (err) => {
+    if (err) {
+      console.error('Video upload error:', err);
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ 
+            success: false,
+            error: 'File size too large. Maximum 100MB allowed.' 
+          });
+        }
+        return res.status(400).json({ 
+          success: false,
+          error: err.message || 'File upload error' 
+        });
+      }
+      return res.status(400).json({ 
+        success: false,
+        error: err.message || 'Failed to upload video' 
+      });
+    }
+    
+    try {
+      if (!req.file) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'No video file provided' 
+        });
+      }
+      
+      // Return the file path relative to the server
+      const videoUrl = `/uploads/videos/${req.file.filename}`;
+      res.json({ 
+        success: true, 
+        videoUrl: videoUrl,
+        fileUrl: videoUrl, // Also provide fileUrl for compatibility
+        filename: req.file.filename 
+      });
+    } catch (error) {
+      console.error('Video upload processing error:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to upload video', 
+        message: error.message 
+      });
+    }
+  });
+});
+
 // Delete uploaded file endpoint
 app.delete('/api/upload/:category/:filename', (req, res) => {
   try {
@@ -285,3 +337,4 @@ sequelize
       console.log("Note: If you need schema changes, consider using migrations instead of sync({ alter: true })");
     });
   });
+  

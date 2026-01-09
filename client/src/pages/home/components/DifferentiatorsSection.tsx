@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { normalizeImageUrl } from '../../../utils/cms';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -154,10 +155,14 @@ export default function DifferentiatorsSection() {
               </div>
             )}
             <img 
-              src={data.feature1Image || "https://venwindrefex.com/wp-content/uploads/2025/01/home-image.jpg"} 
+              src={data.feature1Image ? normalizeImageUrl(data.feature1Image) : normalizeImageUrl("https://venwindrefex.com/wp-content/uploads/2025/01/home-image.jpg")} 
               alt="Wind Turbine" 
               className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               onLoad={() => setImageLoaded(true)}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = normalizeImageUrl("https://venwindrefex.com/wp-content/uploads/2025/01/home-image.jpg");
+              }}
             />
           </div>
         </div>
