@@ -241,9 +241,13 @@ app.delete('/api/upload/:category/:filename', (req, res) => {
 });
 
 // Serve uploaded images
+const wpContentPath = path.join(__dirname, "./wp-content");
+app.use(express.static(wpContentPath));
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use('/wp-content', express.static(path.join(__dirname, 'wp-content')));
+//app.use('/wp-content', express.static(path.join(__dirname, 'wp-content')));
+
 
 app.all("/api/*", (req, res) => {
   return status.responseStatus(res, 404, "Endpoint Not Found");
