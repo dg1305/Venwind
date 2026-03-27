@@ -24,7 +24,7 @@ export function AppRoutes() {
   });
   return (
     <Suspense fallback={
-      <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
+      <div className="min-h-screen w-full flex items-center justify-center bg-white">
         <div className="w-16 h-16 border-4 border-[#8DC63F] border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>

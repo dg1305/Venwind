@@ -11,14 +11,16 @@
   }
 }
 
-/* Prevent horizontal scrolling and overscroll */
-html,
+/* Keep vertical page scrolling enabled globally */
+html {
+  height: 100%;
+}
+
 body {
-  overflow-x: hidden;
-  overflow-y: auto;
-  max-width: 100%;
   min-height: 100%;
-  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  max-width: 100%;
 }
 
 * {
@@ -27,8 +29,7 @@ body {
 
 #root {
   overflow-x: hidden;
-  overflow-y: visible;
+  overflow-y: auto;
   max-width: 100%;
   min-height: 100vh;
-  position: relative;
 }
