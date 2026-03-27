@@ -18,8 +18,8 @@ export default function MapSection() {
           defaultValue: { mapUrl: defaultMapUrl },
         });
         setMapUrl(
-          (result.data?.mapUrl && typeof result.data.mapUrl === 'string' && result.data.mapUrl.trim()) 
-            ? result.data.mapUrl 
+          (result.data?.mapUrl && typeof result.data.mapUrl === 'string' && result.data.mapUrl.trim())
+            ? result.data.mapUrl
             : defaultMapUrl
         );
       } catch (error) {

@@ -67,8 +67,50 @@ export default defineConfig({
   ],
   base,
   build: {
-    sourcemap: true,
+    sourcemap: false, // Disable source maps in production for smaller bundle
     outDir: "out",
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // Vendor chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'react-vendor';
+            }
+            if (id.includes('aos')) {
+              return 'aos-vendor';
+            }
+            if (id.includes('i18next') || id.includes('react-i18next')) {
+              return 'i18n-vendor';
+            }
+            // Other node_modules go into vendor chunk
+            return 'vendor';
+          }
+          // Admin pages chunk
+          if (id.includes('/admin/')) {
+            return 'admin';
+          }
+        },
+        // Optimize chunk file names
+        chunkFileNames: 'js/[name]-[hash].js',
+        entryFileNames: 'js/[name]-[hash].js',
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name?.endsWith('.css')) {
+            return 'css/[name]-[hash][extname]';
+          }
+          if (assetInfo.name?.match(/\.(png|jpe?g|svg|gif|tiff|bmp|ico)$/i)) {
+            return 'images/[name]-[hash][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        },
+      },
+    },
+    // Enable minification using esbuild (faster than terser, no extra dependency)
+    minify: 'esbuild',
+    // Note: esbuild doesn't support drop_console directly, but we can use a plugin if needed
+    // For now, esbuild is faster and sufficient for most use cases
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000,
   },
   resolve: {
     alias: {

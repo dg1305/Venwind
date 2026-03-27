@@ -1,6 +1,3 @@
-import { useEffect } from 'react';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
 import Header from '../home/components/Header';
 import Footer from '../home/components/Footer';
 import HeroSection from './components/HeroSection';
@@ -12,13 +9,7 @@ import GallerySection from './components/GallerySection';
 import BrochureSection from './components/BrochureSection';
 
 export default function Products() {
-  useEffect(() => {
-    AOS.init({
-      duration: 1000,
-      once: true,
-      easing: 'ease-in-out',
-    });
-  }, []);
+  // AOS is initialized globally in main.tsx
 
   return (
     <div className="min-h-screen bg-white">

@@ -40,12 +40,7 @@ export default function CommitmentSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    AOS.init({
-      duration: 1000,
-      once: true,
-      easing: 'ease-out',
-    });
-
+    // AOS is initialized globally in main.tsx
     const fetchContent = async () => {
       try {
         const result = await getCMSData('sustainability', 'commitment', {
@@ -112,6 +107,7 @@ export default function CommitmentSection() {
                   src={item.image}
                   alt={item.title}
                   className="w-full h-auto object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
+                  loading="lazy"
                 />
               </div>
               <h3 className="text-gray-900 text-lg sm:text-xl lg:text-2xl font-bold mb-3 sm:mb-4">

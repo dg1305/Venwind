@@ -77,6 +77,7 @@ export default function Footer() {
                 src={normalizeImageUrl(footerData.logoUrl)} 
                 alt="Venwind Refex" 
                 className="h-12 w-auto mb-6"
+                loading="lazy"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = "https://venwindrefex.com/wp-content/uploads/2023/11/Venwind_Logo_Final-white.png";
@@ -87,6 +88,7 @@ export default function Footer() {
                 src="https://venwindrefex.com/wp-content/uploads/2023/11/Venwind_Logo_Final-white.png" 
                 alt="Venwind Refex" 
                 className="h-12 w-auto mb-6"
+                loading="lazy"
               />
             )}
             {footerData.description && (
@@ -99,6 +101,7 @@ export default function Footer() {
                   alt="Footer image" 
                   className="max-w-full h-auto object-contain rounded"
                   style={{ maxHeight: '200px' }}
+                  loading="lazy"
                 />
               </div>
             )}

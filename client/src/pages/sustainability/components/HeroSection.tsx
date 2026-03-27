@@ -15,12 +15,7 @@ export default function HeroSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    AOS.init({
-      duration: 1000,
-      once: true,
-      easing: 'ease-out',
-    });
-
+    // AOS is initialized globally in main.tsx
     const fetchContent = async () => {
       try {
         const result = await getCMSData('sustainability', 'hero', {

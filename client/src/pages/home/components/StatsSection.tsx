@@ -236,10 +236,11 @@ export default function StatsSection() {
                   
                   if (isImageUrl) {
                     return (
-                      <img 
+                <img 
                         src={normalizeImageUrl(iconUrl)} 
                         alt={stat.alt} 
                         className="w-20 h-20 object-contain"
+                        loading="lazy"
                         onError={(e) => {
                           // Fallback to RemixIcon if image fails to load
                           const target = e.target as HTMLImageElement;
@@ -261,9 +262,9 @@ export default function StatsSection() {
                         ) : iconUrl ? (
                           <img 
                             src={iconUrl} 
-                            alt={stat.alt} 
+                  alt={stat.alt} 
                             className="w-20 h-20 object-contain"
-                          />
+                />
                         ) : (
                           <i className="ri-image-line text-[#8DC63F] text-5xl"></i>
                         )}

@@ -58,38 +58,38 @@ export default function ContactFormSection() {
           defaultValue: defaultContactInfo,
         });
         setContactInfo({
-          title: (result.data?.title && typeof result.data.title === 'string' && result.data.title.trim()) 
-            ? result.data.title 
+          title: (result.data?.title && typeof result.data.title === 'string' && result.data.title.trim())
+            ? result.data.title
             : defaultContactInfo.title,
-          companyName: (result.data?.companyName && typeof result.data.companyName === 'string' && result.data.companyName.trim()) 
-            ? result.data.companyName 
+          companyName: (result.data?.companyName && typeof result.data.companyName === 'string' && result.data.companyName.trim())
+            ? result.data.companyName
             : defaultContactInfo.companyName,
-          address: (result.data?.address && typeof result.data.address === 'string' && result.data.address.trim()) 
-            ? result.data.address 
+          address: (result.data?.address && typeof result.data.address === 'string' && result.data.address.trim())
+            ? result.data.address
             : defaultContactInfo.address,
-          phone: (result.data?.phone && typeof result.data.phone === 'string' && result.data.phone.trim()) 
-            ? result.data.phone 
+          phone: (result.data?.phone && typeof result.data.phone === 'string' && result.data.phone.trim())
+            ? result.data.phone
             : defaultContactInfo.phone,
-          email: (result.data?.email && typeof result.data.email === 'string' && result.data.email.trim()) 
-            ? result.data.email 
+          email: (result.data?.email && typeof result.data.email === 'string' && result.data.email.trim())
+            ? result.data.email
             : defaultContactInfo.email,
-          email2: (result.data?.email2 && typeof result.data.email2 === 'string' && result.data.email2.trim()) 
-            ? result.data.email2 
+          email2: (result.data?.email2 && typeof result.data.email2 === 'string' && result.data.email2.trim())
+            ? result.data.email2
             : defaultContactInfo.email2,
-          facebookUrl: (result.data?.facebookUrl && typeof result.data.facebookUrl === 'string' && result.data.facebookUrl.trim()) 
-            ? result.data.facebookUrl 
+          facebookUrl: (result.data?.facebookUrl && typeof result.data.facebookUrl === 'string' && result.data.facebookUrl.trim())
+            ? result.data.facebookUrl
             : defaultContactInfo.facebookUrl,
-          twitterUrl: (result.data?.twitterUrl && typeof result.data.twitterUrl === 'string' && result.data.twitterUrl.trim()) 
-            ? result.data.twitterUrl 
+          twitterUrl: (result.data?.twitterUrl && typeof result.data.twitterUrl === 'string' && result.data.twitterUrl.trim())
+            ? result.data.twitterUrl
             : defaultContactInfo.twitterUrl,
-          linkedinUrl: (result.data?.linkedinUrl && typeof result.data.linkedinUrl === 'string' && result.data.linkedinUrl.trim()) 
-            ? result.data.linkedinUrl 
+          linkedinUrl: (result.data?.linkedinUrl && typeof result.data.linkedinUrl === 'string' && result.data.linkedinUrl.trim())
+            ? result.data.linkedinUrl
             : defaultContactInfo.linkedinUrl,
-          instagramUrl: (result.data?.instagramUrl && typeof result.data.instagramUrl === 'string' && result.data.instagramUrl.trim()) 
-            ? result.data.instagramUrl 
+          instagramUrl: (result.data?.instagramUrl && typeof result.data.instagramUrl === 'string' && result.data.instagramUrl.trim())
+            ? result.data.instagramUrl
             : defaultContactInfo.instagramUrl,
-          youtubeUrl: (result.data?.youtubeUrl && typeof result.data.youtubeUrl === 'string' && result.data.youtubeUrl.trim()) 
-            ? result.data.youtubeUrl 
+          youtubeUrl: (result.data?.youtubeUrl && typeof result.data.youtubeUrl === 'string' && result.data.youtubeUrl.trim())
+            ? result.data.youtubeUrl
             : defaultContactInfo.youtubeUrl,
         });
       } catch (error) {
@@ -121,7 +121,7 @@ export default function ContactFormSection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!captchaVerified) {
       alert('Please complete the captcha verification');
       return;
@@ -180,7 +180,7 @@ export default function ContactFormSection() {
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight whitespace-pre-line">
               {contactInfo.title || defaultContactInfo.title}
             </h2>
-            
+
             {/* Address */}
             <div className="flex items-start mb-6">
               <div className="w-6 h-6 flex items-center justify-center mr-4 mt-1">
@@ -200,13 +200,13 @@ export default function ContactFormSection() {
                 <i className="ri-smartphone-line text-gray-500 text-xl"></i>
               </div>
               <div className="flex flex-col gap-1">
-                <a 
+                <a
                   href="tel:+914435040050"
                   className="text-gray-600 text-sm hover:text-[#8DC63F] transition-colors"
                 >
                   +91 44 - 3504 0050
                 </a>
-                <a 
+                <a
                   href="tel:+914469908410"
                   className="text-gray-600 text-sm hover:text-[#8DC63F] transition-colors"
                 >
@@ -221,14 +221,14 @@ export default function ContactFormSection() {
                 <i className="ri-mail-line text-gray-500 text-xl"></i>
               </div>
               <div className="flex flex-col gap-1">
-                <a 
+                <a
                   href={`mailto:${contactInfo.email || defaultContactInfo.email}`}
                   className="text-gray-600 text-sm hover:text-[#8DC63F] transition-colors"
                 >
                   {contactInfo.email || defaultContactInfo.email}
                 </a>
                 {(contactInfo.email2 || defaultContactInfo.email2) && (
-                  <a 
+                  <a
                     href={`mailto:${contactInfo.email2 || defaultContactInfo.email2}`}
                     className="text-gray-600 text-sm hover:text-[#8DC63F] transition-colors"
                   >
@@ -241,9 +241,9 @@ export default function ContactFormSection() {
             {/* Social Media */}
             <div className="flex items-center space-x-4">
               {contactInfo.facebookUrl && (
-                <a 
+                <a
                   href={contactInfo.facebookUrl}
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#8DC63F] hover:text-[#7AB62F] transition-colors cursor-pointer"
                 >
@@ -251,9 +251,9 @@ export default function ContactFormSection() {
                 </a>
               )}
               {contactInfo.twitterUrl && (
-                <a 
+                <a
                   href={contactInfo.twitterUrl}
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#8DC63F] hover:text-[#7AB62F] transition-colors cursor-pointer"
                 >
@@ -261,9 +261,9 @@ export default function ContactFormSection() {
                 </a>
               )}
               {contactInfo.linkedinUrl && (
-                <a 
+                <a
                   href={contactInfo.linkedinUrl}
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#8DC63F] hover:text-[#7AB62F] transition-colors cursor-pointer"
                 >
@@ -271,9 +271,9 @@ export default function ContactFormSection() {
                 </a>
               )}
               {contactInfo.instagramUrl && (
-                <a 
+                <a
                   href={contactInfo.instagramUrl}
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#8DC63F] hover:text-[#7AB62F] transition-colors cursor-pointer"
                 >
@@ -281,9 +281,9 @@ export default function ContactFormSection() {
                 </a>
               )}
               {contactInfo.youtubeUrl && (
-                <a 
+                <a
                   href={contactInfo.youtubeUrl}
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#8DC63F] hover:text-[#7AB62F] transition-colors cursor-pointer"
                 >
@@ -295,7 +295,7 @@ export default function ContactFormSection() {
 
           {/* Right Column - Contact Form */}
           <div data-aos="fade-left">
-            <form 
+            <form
               id="contact-form"
               onSubmit={handleSubmit}
               className="space-y-6"
@@ -404,6 +404,7 @@ export default function ContactFormSection() {
                   <i className="ri-send-plane-fill mr-2"></i>
                   {isSubmitting ? 'Sending...' : 'Get In Touch'}
                 </button>
+
               </div>
 
               {/* Status Messages */}
@@ -418,6 +419,22 @@ export default function ContactFormSection() {
                 </div>
               )}
             </form>
+
+            {/* Kissflow Process Iframe */}
+            {/* <div className="mt-12 w-full">
+              <iframe
+                src="https://development-refexgroup.kissflow.com/public/Process/Pf1152c833-6b47-4361-a767-f66a99e07b30"
+                width="100%"
+                height="812"
+                frameBorder="0"
+                marginHeight={0}
+                marginWidth={0}
+                title="Contact Process"
+                className="w-full"
+              >
+                Loading...
+              </iframe>
+            </div> */}
           </div>
         </div>
       </div>

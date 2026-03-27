@@ -24,13 +24,7 @@ export default function FutureGoalsSection() {
     }
   );
 
-  useEffect(() => {
-    AOS.init({
-      duration: 1000,
-      once: true,
-      easing: 'ease-out',
-    });
-  }, []);
+  // AOS is initialized globally in main.tsx - no need to reinitialize
 
   // Ensure content always has values, merge with defaults
   const displayContent: FutureGoalsContent = {

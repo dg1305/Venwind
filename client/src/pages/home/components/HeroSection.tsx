@@ -25,15 +25,7 @@ export default function HeroSection() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    AOS.init({
-      duration: 1000,
-      once: true,
-      offset: -1000, // Very large negative offset to ensure immediate trigger
-      startEvent: 'DOMContentLoaded', // Start on DOM ready
-      disable: false,
-    });
-  }, []);
+  // AOS is initialized globally in main.tsx - no need to reinitialize here
 
   useEffect(() => {
     // Fetch from API first, fallback to localStorage

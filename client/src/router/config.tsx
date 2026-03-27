@@ -1,26 +1,28 @@
 import type { RouteObject } from "react-router-dom";
 import { lazy } from "react";
 import NotFound from "../pages/NotFound";
-import Home from "../pages/home/page";
-import AboutUs from "../pages/about/page";
-import Products from "../pages/products/page";
-import Technology from "../pages/technology/page";
-import Sustainability from "../pages/sustainability/page";
-import Careers from "../pages/careers/page";
-import Contact from "../pages/contact/page";
-import InvestorRelations from "../pages/investor-relations/page";
-import AdminPage from "../pages/admin/page";
-import AdminIndexPage from "../pages/admin/index/page";
-import AdminHomePage from "../pages/admin/home/page";
-import AdminAboutPage from "../pages/admin/about/page";
-import AdminProductsPage from "../pages/admin/products/page";
-import AdminTechnologyPage from "../pages/admin/technology/page";
-import AdminSustainabilityPage from "../pages/admin/sustainability/page";
-import AdminCareersPage from "../pages/admin/careers/page";
-import AdminContactPage from "../pages/admin/contact/page";
-import AdminInvestorRelationsPage from "../pages/admin/investor-relations/page";
-import AdminUsersPage from "../pages/admin/users/page";
-import LoginPage from "../pages/login/page";
+
+// Lazy load all routes for code splitting and faster initial load
+const Home = lazy(() => import("../pages/home/page"));
+const AboutUs = lazy(() => import("../pages/about/page"));
+const Products = lazy(() => import("../pages/products/page"));
+const Technology = lazy(() => import("../pages/technology/page"));
+const Sustainability = lazy(() => import("../pages/sustainability/page"));
+const Careers = lazy(() => import("../pages/careers/page"));
+const Contact = lazy(() => import("../pages/contact/page"));
+const InvestorRelations = lazy(() => import("../pages/investor-relations/page"));
+const AdminPage = lazy(() => import("../pages/admin/page"));
+const AdminIndexPage = lazy(() => import("../pages/admin/index/page"));
+const AdminHomePage = lazy(() => import("../pages/admin/home/page"));
+const AdminAboutPage = lazy(() => import("../pages/admin/about/page"));
+const AdminProductsPage = lazy(() => import("../pages/admin/products/page"));
+const AdminTechnologyPage = lazy(() => import("../pages/admin/technology/page"));
+const AdminSustainabilityPage = lazy(() => import("../pages/admin/sustainability/page"));
+const AdminCareersPage = lazy(() => import("../pages/admin/careers/page"));
+const AdminContactPage = lazy(() => import("../pages/admin/contact/page"));
+const AdminInvestorRelationsPage = lazy(() => import("../pages/admin/investor-relations/page"));
+const AdminUsersPage = lazy(() => import("../pages/admin/users/page"));
+const LoginPage = lazy(() => import("../pages/login/page"));
 
 const routes: RouteObject[] = [
   {
